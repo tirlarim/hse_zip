@@ -8,5 +8,6 @@ typedef struct {
 
 void init(FileInfo* fileInfo);
 void printFileAsHex(FileInfo* fileInfo);
+void printFileSize(FileInfo* fileInfo);
 
 #endif //HSE_ZIP_FILEPREPARE_H
