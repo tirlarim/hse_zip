@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include "filePrepare.h"
 
 // Step One
@@ -9,6 +10,10 @@ void fileRead(FileInfo* fileInfo);
 void init(FileInfo* fileInfo) {
   fileInfo->size = 0;
   fileInfo->file = fopen("../testData/text_20byte.txt", "rb");
+  if (fileInfo->file == 0) {
+    perror("Open error");
+    exit(1);
+  }
   fseek(fileInfo->file, 0, SEEK_END);
   fileInfo->size = ftell(fileInfo->file);
   fseek(fileInfo->file, 0, SEEK_SET);
