@@ -3,7 +3,7 @@
 int main() {
   FILE *fp;
   int a = 0;
-  fp = fopen("../testData/example.txt","rb");
+  fp = fopen("../testData/text_20byte.txt","rb");
   fseek(fp, 0, SEEK_END);
   long int size = ftell(fp); // now you got size of file in bytes
   fseek(fp, 0, SEEK_SET);    // same as rewind(fp)
