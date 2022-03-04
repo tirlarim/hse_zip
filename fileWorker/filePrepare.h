@@ -4,6 +4,7 @@
 #define FILE_SIZE 1000000
 #define FILE_NAME_SIZE 100
 #define FILE_COUNT_ARR_LEN 256
+#define CODE_SIZE 256
 
 typedef struct {
   unsigned long long size;
@@ -12,6 +13,15 @@ typedef struct {
   char fileName[FILE_NAME_SIZE];
   FILE* file;
 }FileInfo;
+
+typedef struct node {
+  unsigned char symbol;
+  unsigned char isSymbol;
+  unsigned int symbolCount;
+  unsigned char code[CODE_SIZE];
+  int deepLevel;
+  struct node * left, *right, *top;
+}NODE;
 
 void init(FileInfo* fileInfo);
 void printFileAsHex(FileInfo* fileInfo);
