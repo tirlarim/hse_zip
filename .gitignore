@@ -2,6 +2,7 @@
 #CMake
 /cmake-build-debug/
 /build/
+/buildTests/
 
 ### C template
 # Prerequisites
