@@ -8,11 +8,14 @@
 void getFileSize(FileInfo* fileInfo);
 void getFileContent(FileInfo* fileInfo);
 void fillSymbolsCountArr(FileInfo* fileInfo);
+void sortSymbolsCountArr(FileInfo* fileInfo);
 
 void init(FileInfo* fileInfo) {
   getFileSize(fileInfo);
   getFileContent(fileInfo);
   fillSymbolsCountArr(fileInfo);
+  sortSymbolsCountArr(fileInfo);
+//  sortSymbolsCountArr(fileInfo);
 }
 
 void getFileSize(FileInfo* fileInfo) {
@@ -63,8 +66,16 @@ void printFileAsText(FileInfo* fileInfo) {
 }
 
 void fillSymbolsCountArr(FileInfo* fileInfo) {
+  unsigned long long bufferArr[FILE_COUNT_ARR_LEN] = {0};
   for (unsigned long long i = 0; i < fileInfo->size; ++i) {
-    fileInfo->symbolsCountArr[fileInfo->content[i]]++;
+    bufferArr[fileInfo->content[i]]++;
+  }
+  for (int i = 0, j = 0; i < FILE_COUNT_ARR_LEN; ++i) {
+    if (bufferArr[i] != 0) {
+      fileInfo->symbolsCountArr[j][0] = i;
+      fileInfo->symbolsCountArr[j][1] = bufferArr[i];
+      j++;
+    }
   }
 }
 
@@ -73,6 +84,20 @@ void printSymbolsCountArr(FileInfo* fileInfo) {
     if (i%8==0) {
       printf("\n");
     }
-    printf("0x%x -> %llu\t", i, fileInfo->symbolsCountArr[i]);
+    printf("0x%x -> %llu\t", (int)fileInfo->symbolsCountArr[i][0], fileInfo->symbolsCountArr[i][1]);
+  }
+}
+
+void sortSymbolsCountArr(FileInfo* fileInfo) {
+  unsigned long long buffer[2] = {0};
+  for (int i = 0; i < FILE_COUNT_ARR_LEN-1;) {
+    if (fileInfo->symbolsCountArr[i][1] < fileInfo->symbolsCountArr[i+1][1]) {
+      buffer[0] = fileInfo->symbolsCountArr[i][0]; buffer[1] = fileInfo->symbolsCountArr[i][1];
+      fileInfo->symbolsCountArr[i][0] = fileInfo->symbolsCountArr[i+1][0]; fileInfo->symbolsCountArr[i][1] = fileInfo->symbolsCountArr[i+1][1];
+      fileInfo->symbolsCountArr[i+1][0] = buffer[0]; fileInfo->symbolsCountArr[i+1][1] = buffer[1];
+      i = 0;
+    } else {
+      i++;
+    }
   }
 }

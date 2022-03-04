@@ -8,20 +8,20 @@
 
 typedef struct {
   unsigned long long size;
-  unsigned long long symbolsCountArr[FILE_COUNT_ARR_LEN];
+  unsigned long long symbolsCountArr[FILE_COUNT_ARR_LEN][2]; //first -> symbol as hex (int) | second -> symbol count
   int content[FILE_SIZE];
   char fileName[FILE_NAME_SIZE];
   FILE* file;
 }FileInfo;
 
-typedef struct node {
+typedef struct BIN_TREE {
   unsigned char symbol;
   unsigned char isSymbol;
   unsigned int symbolCount;
   unsigned char code[CODE_SIZE];
   int deepLevel;
-  struct node * left, *right, *top;
-}NODE;
+  struct BIN_TREE *left, *right, *top;
+}BinTree;
 
 void init(FileInfo* fileInfo);
 void printFileAsHex(FileInfo* fileInfo);
