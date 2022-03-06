@@ -1,7 +1,7 @@
 #ifndef HSE_ZIP_FILE_PREPARE_H
 #define HSE_ZIP_FILE_PREPARE_H
 
-#define FILE_SIZE 100
+#define FILE_SIZE 10000 // program don't work if size <= 1000
 #define FILE_NAME_SIZE 100
 #define FILE_COUNT_ARR_LEN 256
 #define CODE_SIZE 256

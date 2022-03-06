@@ -9,14 +9,14 @@ void getFileSize(FileInfo* fileInfo);
 void getFileContent(FileInfo* fileInfo);
 void fillSymbolsCountArr(FileInfo* fileInfo);
 void sortSymbolsCountArr(FileInfo* fileInfo);
-void initTree(FileInfo* fileInfo); // not created yet
+//void initTree(FileInfo* fileInfo); // not created yet
 
 void init(FileInfo* fileInfo) {
   getFileSize(fileInfo);
   getFileContent(fileInfo);
   fillSymbolsCountArr(fileInfo);
   sortSymbolsCountArr(fileInfo);
-  initTree(fileInfo);
+//  initTree(fileInfo);
 }
 
 void getFileSize(FileInfo* fileInfo) {
