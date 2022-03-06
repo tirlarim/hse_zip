@@ -1,7 +1,7 @@
 #ifndef HSE_ZIP_FILE_PREPARE_H
 #define HSE_ZIP_FILE_PREPARE_H
 
-#define FILE_SIZE 1000000
+#define FILE_SIZE 100
 #define FILE_NAME_SIZE 100
 #define FILE_COUNT_ARR_LEN 256
 #define CODE_SIZE 256
@@ -15,11 +15,12 @@ typedef struct {
 }FileInfo;
 
 typedef struct BIN_TREE {
-  unsigned char symbol;
-  unsigned char isSymbol;
+  int symbol; // bit -> 0~255 -> 00~ff
+//  unsigned char isSymbol; // I don't know what it is
   unsigned int symbolCount;
-  unsigned char code[CODE_SIZE];
-  int deepLevel;
+  unsigned char code[CODE_SIZE]; // need more
+  unsigned long long priorityLvl;
+  unsigned int deepLevel;
   struct BIN_TREE *left, *right, *top;
 }BinTree;
 
