@@ -21,7 +21,7 @@ void init(FileInfo* fileInfo) {
 
 void getFileSize(FileInfo* fileInfo) {
   fileInfo->size = 0;
-  fileInfo->file = fopen(fileInfo->fileName, "rb");
+  fileInfo->file = fopen("../testData/text_20byte.txt", "rb");
   if (fileInfo->file == 0) {
     perror("Open error");
     exit(1);
@@ -33,11 +33,12 @@ void getFileSize(FileInfo* fileInfo) {
 }
 
 void getFileContent(FileInfo* fileInfo) {
-  fileInfo->file = fopen(fileInfo->fileName, "rb");
+  fileInfo->file = fopen("../testData/text_20byte.txt", "rb");
   unsigned long long readIndex = 0;
   int buffer = getc(fileInfo->file);
   while (buffer != EOF) {
     fileInfo->content[readIndex] = buffer; // pls no write (char)buffer this is break all. we should use int
+    printf("%d\t", fileInfo->content[readIndex]);
     buffer = fgetc(fileInfo->file);
     readIndex++;
   }
