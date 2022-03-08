@@ -30,4 +30,9 @@ void printFileSize(FileInfo* fileInfo);
 void printFileAsText(FileInfo* fileInfo);
 void printSymbolsCountArr(FileInfo* fileInfo);
 
+void getFileSize(FileInfo* fileInfo);
+void getFileContent(FileInfo* fileInfo);
+void fillSymbolsCountArr(FileInfo* fileInfo);
+void sortSymbolsCountArr(FileInfo* fileInfo);
+
 #endif //HSE_ZIP_FILE_PREPARE_H
