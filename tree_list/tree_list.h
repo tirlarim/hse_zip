@@ -1,7 +1,3 @@
-//
-// Created by Ilya on 08.03.2022.
-//
-
 #ifndef TREE_LIST_TREE_LIST_H
 #define TREE_LIST_TREE_LIST_H
 
@@ -15,7 +11,6 @@ typedef struct node {
     unsigned char symb;
     unsigned int freq;
     struct node *next;
-
     int isSymb;
     char code[CODE_SIZE];
     struct node *right, *left;

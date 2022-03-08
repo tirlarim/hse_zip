@@ -1,7 +1,3 @@
-//
-// Created by Ilya on 08.03.2022.
-//
-
 #include "tree_list.h"
 
 int* init_array_with_zeroes(int count) {
@@ -41,7 +37,6 @@ void add_to_list (NODE** pphead, unsigned int freq, int symb, NODE* branch) {
     else
         pnew->isSymb = 1;
     pnew->next = *pphead;
-
     *pphead = pnew;
 }
 
