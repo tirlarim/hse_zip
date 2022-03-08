@@ -1,3 +1,0 @@
-C:/Users/Ilya/CLionProjects/hse_zip/tree_list/cmake-build-debug/CMakeFiles/tree_list.dir
-C:/Users/Ilya/CLionProjects/hse_zip/tree_list/cmake-build-debug/CMakeFiles/edit_cache.dir
-C:/Users/Ilya/CLionProjects/hse_zip/tree_list/cmake-build-debug/CMakeFiles/rebuild_cache.dir
