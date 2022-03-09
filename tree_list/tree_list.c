@@ -1,6 +1,13 @@
+#include <stdbool.h>
 #include "tree_list.h"
 
+int* init_array_with_zeroes(int count);
+void get_chars_frequency(char filename[], int* freq_arr, long* length);
+void add_to_list (NODE** pphead, unsigned int freq, int symbol, NODE* branch);
+void make_list(NODE** init, int* freq_arr);
+void make_tree(NODE** init);
 void PrintTreeOnSide(const NODE* root, int level);
+void printTreeCodes(const NODE* root);
 
 void initTree() {
   int* freq = init_array_with_zeroes(SYMBOLS_COUNT);
@@ -11,7 +18,9 @@ void initTree() {
   make_list(&init, freq);
   make_tree(&init);
   //debug
-  PrintTreeOnSide(init, 0);
+//  PrintTreeOnSide(init, 0);
+  printf("Codes:\n");
+  printTreeCodes(init);
 }
 
 //debug
@@ -22,12 +31,26 @@ void PrintTreeOnSide(const NODE* root, int level) {
       printf("\t");
     }
     printf("%3d", root->freq);
-    if (root->isSymb != 0)
-      printf(":%c\n", root->symb);
+    if (root->isSymbol)
+      printf(":%c\n", root->symbol);
     else {
       printf("\n");
     }
     PrintTreeOnSide(root->left, level + 1);
+  }
+}
+
+void printTreeCodes(const NODE* root) {
+  if (root) {
+    printTreeCodes(root->right);
+    if (root->isSymbol) {
+      printf("Symbol: '%c'\t", root->symbol);
+      for (int i = 0; i < CODE_SIZE; ++i) {
+        printf("%d", root->code[i]);
+      }
+      printf("\n");
+    }
+    printTreeCodes(root->left);
   }
 }
 
@@ -51,7 +74,7 @@ void get_chars_frequency(char filename[], int* freq_arr, long* length) {
   fclose(input);
 }
 
-void add_to_list (NODE** pphead, unsigned int freq, int symb, NODE* branch) {
+void add_to_list(NODE** pphead, unsigned int freq, int symbol, NODE* branch) {
   while (*pphead) {
     if ((*pphead)->freq > freq) {
       break;
@@ -60,13 +83,13 @@ void add_to_list (NODE** pphead, unsigned int freq, int symb, NODE* branch) {
   }
   NODE* pnew = (NODE*)malloc(sizeof(NODE));
   pnew->freq = freq;
-  pnew->symb = (char) symb;
+  pnew->symbol = (char) symbol;
   pnew->left = NULL;
   pnew->right = NULL;
   if (branch != NULL)
     pnew = branch;
   else {
-    pnew->isSymb = 1;
+    pnew->isSymbol = true;
   }
   pnew->next = *pphead;
   *pphead = pnew;
@@ -83,7 +106,7 @@ void make_list(NODE** init, int* freq_arr) {
 NODE* make_node_from_two(const NODE* left, const NODE* right) {
   NODE* res = (NODE*)malloc(sizeof(NODE));
   res->freq = left->freq + right->freq;
-  res->isSymb = 0;
+  res->isSymbol = false;
   res->left = left;
   res->right = right;
   res->next = NULL;
