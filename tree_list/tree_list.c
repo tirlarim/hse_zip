@@ -1,5 +1,36 @@
 #include "tree_list.h"
 
+void PrintTreeOnSide(const NODE* root, int level);
+
+void initTree() {
+  int* freq = init_array_with_zeroes(SYMBOLS_COUNT);
+  char filename[] = "../tree_list/input.txt";
+  long length;
+  get_chars_frequency(filename,freq, &length);
+  NODE* init = NULL;
+  make_list(&init, freq);
+  make_tree(&init);
+  //debug
+  PrintTreeOnSide(init, 0);
+}
+
+//debug
+void PrintTreeOnSide(const NODE* root, int level) {
+  if (root) {
+    PrintTreeOnSide(root->right, level + 1);
+    for (int i = 0; i < level; i++) {
+      printf("\t");
+    }
+    printf("%3d", root->freq);
+    if (root->isSymb != 0)
+      printf(":%c\n", root->symb);
+    else {
+      printf("\n");
+    }
+    PrintTreeOnSide(root->left, level + 1);
+  }
+}
+
 int* init_array_with_zeroes(int count) {
   int* arr = (int*)malloc(count*sizeof(int));
   for (int i = 0; i < count; i++) {
@@ -10,7 +41,7 @@ int* init_array_with_zeroes(int count) {
 
 void get_chars_frequency(char filename[], int* freq_arr, long* length) {
   FILE* input = fopen(filename, "rb");
-  if (!input) exit(0);
+  if (!input) exit(2);
   fseek(input, 0, SEEK_END);
   *length = ftell(input);
   fseek(input, 0, SEEK_SET);

@@ -21,5 +21,6 @@ void get_chars_frequency(char filename[], int* freq_arr, long* length);
 void add_to_list (NODE** pphead, unsigned int freq, int symb, NODE* branch);
 void make_list(NODE** init, int* freq_arr);
 void make_tree(NODE** init);
+void initTree();
 
 #endif //TREE_LIST_TREE_LIST_H
