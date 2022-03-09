@@ -22,20 +22,21 @@ void get_chars_frequency(char filename[], int* freq_arr, long* length) {
 
 void add_to_list (NODE** pphead, unsigned int freq, int symb, NODE* branch) {
   while (*pphead) {
-    if ((*pphead)->freq > freq)
+    if ((*pphead)->freq > freq) {
       break;
+    }
     pphead = &((*pphead)->next);
   }
   NODE* pnew = (NODE*)malloc(sizeof(NODE));
-
   pnew->freq = freq;
   pnew->symb = (char) symb;
   pnew->left = NULL;
   pnew->right = NULL;
   if (branch != NULL)
     pnew = branch;
-  else
+  else {
     pnew->isSymb = 1;
+  }
   pnew->next = *pphead;
   *pphead = pnew;
 }
@@ -65,7 +66,8 @@ void make_tree(NODE** init) {
       (*init) = ((*init)->next)->next;
       add_to_list(&(*init), new->freq, '0', new);
     }
-    else
+    else {
       (*init) = new;
+    }
   }
 }
