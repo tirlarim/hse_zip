@@ -8,12 +8,12 @@
 #define SYMBOLS_COUNT 256
 
 typedef struct node {
-    unsigned char symb;
-    unsigned int freq;
-    struct node *next;
-    int isSymb;
-    char code[CODE_SIZE];
-    struct node *right, *left;
+  unsigned char symb;
+  unsigned int freq;
+  struct node *next;
+  int isSymb;
+  char code[CODE_SIZE];
+  struct node *right, *left;
 }NODE;
 
 int* init_array_with_zeroes(int count);
