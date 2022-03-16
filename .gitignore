@@ -4,7 +4,8 @@
 /build/
 
 ### Zip
-/testDataOutput/
+testDataOutput/*.txt
+testDataOutput/*.hse_zip
 
 ### C template
 # Prerequisites
