@@ -1,15 +1,11 @@
-#include <stdio.h>
 #include <string.h>
-#include "fileWorker/filePrepare.h"
+#include "tree_list/tree_list.h"
 
 int main() {
-  FileInfo fileInfo;
-  char fileName[] = "../testData/text_20byte.txt";
-  memcpy(fileInfo.fileName, fileName, sizeof(fileName));
-  init(&fileInfo);
-  printFileAsHex(&fileInfo);
-  printFileAsText(&fileInfo);
-  printFileSize(&fileInfo);
-  printSymbolsCountArr(&fileInfo);
+  NODE* binTree = NULL;
+  char fileNameInput[] = "../testData/example.txt",
+       fileNameOutput[] = "../testDataOutput/answer.hse_zip",
+       fileNameOutputUnzip[] = "../testDataOutput/answer.txt";
+  initTree(binTree, fileNameInput, fileNameOutput, fileNameOutputUnzip);
   return 0;
 }

@@ -2,6 +2,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include "filePrepare.h"
+#include "../tree_list/tree_list.h"
+
 
 // Step One
 
@@ -9,14 +11,14 @@ void getFileSize(FileInfo* fileInfo);
 void getFileContent(FileInfo* fileInfo);
 void fillSymbolsCountArr(FileInfo* fileInfo);
 void sortSymbolsCountArr(FileInfo* fileInfo);
-//void initTree(FileInfo* fileInfo); // not created yet
 
 void init(FileInfo* fileInfo) {
+  memset(fileInfo->symbolsCountArr, 0, sizeof(fileInfo->symbolsCountArr));
+  memset(fileInfo->content, 0, sizeof(fileInfo->content));
   getFileSize(fileInfo);
   getFileContent(fileInfo);
   fillSymbolsCountArr(fileInfo);
   sortSymbolsCountArr(fileInfo);
-//  initTree(fileInfo);
 }
 
 void getFileSize(FileInfo* fileInfo) {
@@ -35,10 +37,10 @@ void getFileSize(FileInfo* fileInfo) {
 void getFileContent(FileInfo* fileInfo) {
   fileInfo->file = fopen("../testData/text_20byte.txt", "rb");
   unsigned long long readIndex = 0;
-  int buffer = getc(fileInfo->file);
-  while (buffer != EOF) {
+  unsigned char buffer = getc(fileInfo->file);
+  while (readIndex < fileInfo->size) {
+//    printf("readIndex -> %llu\tvalue -> %d\n", readIndex, buffer);
     fileInfo->content[readIndex] = buffer; // pls no write (char)buffer this is break all. we should use int
-    printf("%d\t", fileInfo->content[readIndex]);
     buffer = fgetc(fileInfo->file);
     readIndex++;
   }
@@ -61,7 +63,7 @@ void printFileAsHex(FileInfo* fileInfo) {
 }
 
 void printFileAsText(FileInfo* fileInfo) {
-  for (int i = 0; fileInfo->content[i] != 0 ; ++i) {
+  for (int i = 0; (int)fileInfo->content[i] != 0 ; ++i) {
     printf("%c", (char)fileInfo->content[i]);
   }
   printf("\n");
@@ -88,6 +90,7 @@ void printSymbolsCountArr(FileInfo* fileInfo) {
     }
     printf("0x%x -> %llu\t", (int)fileInfo->symbolsCountArr[i][0], fileInfo->symbolsCountArr[i][1]);
   }
+  printf("\n");
 }
 
 void sortSymbolsCountArr(FileInfo* fileInfo) {
