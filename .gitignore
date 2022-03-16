@@ -3,6 +3,9 @@
 /cmake-build-debug/
 /build/
 
+### Zip
+/testDataOutput/
+
 ### C template
 # Prerequisites
 *.d
