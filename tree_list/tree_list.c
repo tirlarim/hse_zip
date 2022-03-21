@@ -6,66 +6,29 @@
 
 int* init_array_with_zeroes(int count);
 void get_chars_frequency(char filename[], int* freq_arr, long* length);
-void add_to_list (NODE** pphead, unsigned int freq, int symbol, NODE* branch);
+void add_to_list (NODE** pphead, unsigned int freq, unsigned char symbol, NODE* branch);
 void make_list(NODE** init, int* freq_arr);
 void make_tree(NODE** init);
 void PrintTreeOnSide(const NODE* root, int level);
 void printTreeCodes(const NODE* root);
 void create_codes(NODE** init, int level);
-void Simmetric(const NODE* root);
-void find_and_print_code(NODE** init, FILE* file, int symbol);
+void symmetric(NODE* root, FILE* file);
+void find_and_print_code(NODE** init, FILE* file, unsigned char symbol);
+void change_symbols_to_bits(char input_filename[], char output_filename[], long length, NODE** init);
+void archive(char output_filename[], long length, NODE** init);
 
 char code[CODE_SIZE];
 
-void initTree(NODE* init, char* filenameInput, char* filenameOutput, char* filenameOutputUnzip) {
+void initTree(NODE* init, char* filenameInput, char* filenameOutput) {
   int* freq = init_array_with_zeroes(SYMBOLS_COUNT);
   long length = 0;
   get_chars_frequency(filenameInput,freq, &length);
   make_list(&init, freq);
   make_tree(&init);
-  //debug
   PrintTreeOnSide(init, 0);
-  //endofdebug
   create_codes(&init, 0);
-  //debug
-  printf("\n");
-  Simmetric(init);
-  //endofdebug
-
-  //замена символов на биты
-  FILE* input = fopen(filenameInput, "r");
-  FILE* output = fopen(filenameOutput, "w");
-  for (int i = 0; i < length; i++) {
-    int symbol = getc(input);
-    find_and_print_code(&init, output, symbol);
-  }
-  fclose(input);
-  fclose(output);
-
-  //union - заготовка
-  FILE* fir_output = fopen(filenameOutput, "r");
-  unsigned char str[length*10];
-  fgets(str, length*10, fir_output); //length - long!
-  fclose(fir_output);
-  int count = strlen(str) / BIT8;
-  int tail = strlen(str) % BIT8; // not used
-  int len = count + 1;
-  BIT_TO_CHAR symbol;
-  unsigned char* res = (unsigned char*)malloc(len*sizeof(unsigned char));
-  for (int i = 0; i < len; i++) {
-    symbol.mbit.b1 = str[i * BIT8 + 0];
-    symbol.mbit.b2 = str[i * BIT8 + 1];
-    symbol.mbit.b3 = str[i * BIT8 + 2];
-    symbol.mbit.b4 = str[i * BIT8 + 3];
-    symbol.mbit.b5 = str[i * BIT8 + 4];
-    symbol.mbit.b6 = str[i * BIT8 + 5];
-    symbol.mbit.b7 = str[i * BIT8 + 6];
-    symbol.mbit.b8 = str[i * BIT8 + 7];
-    res[i] = symbol.symbol;
-  }
-  FILE* sec_output = fopen(filenameOutputUnzip, "w");
-  fprintf(sec_output, "%s", res);
-  fclose(sec_output);
+  change_symbols_to_bits(filenameInput, filenameOutput, length, &init);
+  archive(filenameOutput, length, &init);
 }
 
 //debug
@@ -85,12 +48,18 @@ void PrintTreeOnSide(const NODE* root, int level) {
   }
 }
 
-void Simmetric(const NODE* root) {
+void symmetric(NODE* root, FILE* file) {
   if (root) {
-    Simmetric(root->left);
-    if (root->isSymbol)
-      printf("%c: %s\n", root->symbol, root->code);
-    Simmetric(root->right);
+    symmetric(root->left, file);
+    if (root->isSymbol) {
+      if (root->symbol != '\n' && root->symbol != '\r')
+        fprintf(file, "%c:%s ", root->symbol, root->code);
+      else if (root->symbol == '\n')
+        fprintf(file, "%s:%s ", "\\n", root->code);
+      else if (root->symbol == '\r')
+        fprintf(file, "%s:%s ", "\\r", root->code);
+    }
+    symmetric(root->right, file);
   }
 }
 
@@ -107,9 +76,9 @@ void create_codes(NODE** init, int level) {
   }
 }
 
-void find_and_print_code(NODE** init, FILE* file, int symbol) {
+void find_and_print_code(NODE** init, FILE* file, unsigned char symbol) {
   if (*init) {
-    if ((*init)->isSymbol && (int)(*init)->symbol == symbol) {
+    if ((*init)->isSymbol && (unsigned char)(*init)->symbol == symbol) {
       fprintf(file, "%s", (*init)->code);
       return;
     }
@@ -153,7 +122,7 @@ void get_chars_frequency(char filename[], int* freq_arr, long* length) {
   fclose(input);
 }
 
-void add_to_list(NODE** pphead, unsigned int freq, int symbol, NODE* branch) {
+void add_to_list(NODE** pphead, unsigned int freq, unsigned char symbol, NODE* branch) {
   while (*pphead) {
     if ((*pphead)->freq > freq) {
       break;
@@ -162,7 +131,7 @@ void add_to_list(NODE** pphead, unsigned int freq, int symbol, NODE* branch) {
   }
   NODE* pnew = (NODE*)malloc(sizeof(NODE));
   pnew->freq = freq;
-  pnew->symbol = (char) symbol;
+  pnew->symbol = symbol;
   pnew->left = NULL;
   pnew->right = NULL;
   if (branch != NULL)
@@ -203,4 +172,43 @@ void make_tree(NODE** init) {
       (*init) = new;
     }
   }
+}
+
+void change_symbols_to_bits(char input_filename[], char output_filename[], long length, NODE** init) {
+  FILE* input = fopen(input_filename, "r");
+  FILE* output = fopen(output_filename, "w");
+  for (int i = 0; i < length; i++) {
+    int symbol = getc(input);
+    find_and_print_code(init, output, symbol);
+  }
+  fclose(input);
+  fclose(output);
+}
+
+void archive(char output_filename[], long length, NODE** init) {
+  FILE* get_codes = fopen(output_filename, "r");
+  unsigned char str[length*10];
+  fgets(str, length*10, get_codes);
+  fclose(get_codes);
+  int count = strlen(str) / BIT8;
+//  int tail = strlen(str) % BIT8;
+  int len = count + 1;
+  BIT_TO_CHAR symbol;
+  unsigned char* res = (unsigned char*)malloc(len*sizeof(unsigned char));
+  for (int i = 0; i < len; i++) {
+    symbol.mbit.b1 = str[i*BIT8 + 0];
+    symbol.mbit.b2 = str[i*BIT8 + 1];
+    symbol.mbit.b3 = str[i*BIT8 + 2];
+    symbol.mbit.b4 = str[i*BIT8 + 3];
+    symbol.mbit.b5 = str[i*BIT8 + 4];
+    symbol.mbit.b6 = str[i*BIT8 + 5];
+    symbol.mbit.b7 = str[i*BIT8 + 6];
+    symbol.mbit.b8 = str[i*BIT8 + 7];
+    res[i] = symbol.character;
+  }
+  res[len] = '\000';
+  FILE* final = fopen(output_filename, "w");
+  symmetric(*init, final);
+  fprintf(final, "\n%s", res);
+  fclose(final);
 }

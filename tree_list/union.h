@@ -4,7 +4,7 @@
 #define BIT8 8
 
 typedef union bit_to_char {
-  unsigned char symbol;
+  unsigned char character;
   struct bit {
     unsigned b1 : 1;
     unsigned b2 : 1;

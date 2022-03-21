@@ -3,9 +3,8 @@
 
 int main() {
   NODE* binTree = NULL;
-  char fileNameInput[] = "../testData/example.txt",
-       fileNameOutput[] = "../testDataOutput/answer.hse_zip",
-       fileNameOutputUnzip[] = "../testDataOutput/answer.txt";
-  initTree(binTree, fileNameInput, fileNameOutput, fileNameOutputUnzip);
+  char fileNameInput[] = "../testDataInput/example.txt",
+       fileNameOutput[] = "../testDataOutput/answer.hse_zip";
+  initTree(binTree, fileNameInput, fileNameOutput);
   return 0;
 }
