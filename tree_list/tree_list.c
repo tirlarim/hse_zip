@@ -14,7 +14,7 @@ void printTreeCodes(const NODE* root);
 void create_codes(NODE** init, int level);
 void symmetric(NODE* root, FILE* file);
 void find_and_print_code(NODE** init, FILE* file, unsigned char symbol);
-void change_symbols_to_bits(char input_filename[], char output_filename[], long length, NODE** init);
+void change_symbols_to_bits(char input_filename[], char output_filename[], long length, NODE** init); //print only
 void archive(char output_filename[], long length, NODE** init);
 
 char code[CODE_SIZE];
@@ -25,7 +25,7 @@ void initTree(NODE* init, char* filenameInput, char* filenameOutput) {
   get_chars_frequency(filenameInput,freq, &length);
   make_list(&init, freq);
   make_tree(&init);
-  PrintTreeOnSide(init, 0);
+//  PrintTreeOnSide(init, 0); // print tree
   create_codes(&init, 0);
   change_symbols_to_bits(filenameInput, filenameOutput, length, &init);
   archive(filenameOutput, length, &init);
@@ -187,11 +187,11 @@ void change_symbols_to_bits(char input_filename[], char output_filename[], long 
 
 void archive(char output_filename[], long length, NODE** init) {
   FILE* get_codes = fopen(output_filename, "r");
-  unsigned char str[length*10];
-  fgets(str, length*10, get_codes);
+  unsigned char str[length*20];
+  fgets(str, length*20, get_codes);
   fclose(get_codes);
   int count = strlen(str) / BIT8;
-//  int tail = strlen(str) % BIT8;
+  int tail = strlen(str) % BIT8;
   int len = count + 1;
   BIT_TO_CHAR symbol;
   unsigned char* res = (unsigned char*)malloc(len*sizeof(unsigned char));
@@ -206,9 +206,10 @@ void archive(char output_filename[], long length, NODE** init) {
     symbol.mbit.b8 = str[i*BIT8 + 7];
     res[i] = symbol.character;
   }
-  res[len] = '\000';
+  res[len] = '\0';
   FILE* final = fopen(output_filename, "w");
   symmetric(*init, final);
+  fprintf(final, "%d", tail);
   fprintf(final, "\n%s", res);
   fclose(final);
 }

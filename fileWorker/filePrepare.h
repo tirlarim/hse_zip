@@ -18,5 +18,6 @@ void printFileAsHex(FileInfo* fileInfo);
 void printFileSize(FileInfo* fileInfo);
 void printFileAsText(FileInfo* fileInfo);
 void printSymbolsCountArr(FileInfo* fileInfo);
+void checkFileSize(char* filenameInput, char* filenameOutput);
 
 #endif //HSE_ZIP_FILE_PREPARE_H

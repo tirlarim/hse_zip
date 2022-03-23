@@ -112,3 +112,25 @@ int getSymbolsCountArrLen(FileInfo* fileInfo) {
   while (fileInfo->symbolsCountArr[len][1]) {len++;}
   return len;
 }
+
+void checkFileSize(char* filenameInput, char* filenameOutput) {
+  long fileSizes[2] = {0};
+  FILE* fileInput = fopen(filenameInput, "rb");
+  FILE* fileOutput = fopen(filenameOutput, "rb");
+  if (fileInput == 0 || fileOutput == 0) {
+    perror("Open error");
+    exit(3);
+  }
+  fseek(fileInput, 0, SEEK_END);
+  fileSizes[0] = ftell(fileInput);
+  fseek(fileInput, 0, SEEK_SET);
+  fclose(fileInput);
+  fseek(fileOutput, 0, SEEK_END);
+  fileSizes[1] = ftell(fileOutput);
+  fseek(fileOutput, 0, SEEK_SET);
+  fclose(fileOutput);
+  printf("file input: %ld bytes,  file output: %ld bytes\n", fileSizes[0], fileSizes[1]);
+  fileSizes[0] > fileSizes[1] ?
+  printf("save %ld bytes -> %.2f%%", fileSizes[0] - fileSizes[1], 100-((float)fileSizes[1]/(float)fileSizes[0])*100) :
+  printf("get %ld bytes -> %.2f%%", fileSizes[1] - fileSizes[0], ((float)fileSizes[1]/(float)fileSizes[0])*100);
+}
