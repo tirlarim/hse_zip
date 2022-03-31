@@ -16,6 +16,10 @@ void symmetric(NODE* root, FILE* file);
 void find_and_print_code(NODE** init, FILE* file, unsigned char symbol);
 void change_symbols_to_bits(char input_filename[], char output_filename[], long length, NODE** init); //print only
 void archive(char output_filename[], long length, NODE** init);
+void decode(char* filenameOutput);
+void printCodes(CHAR_TO_BITS* buffer);
+void saveBuffToArr(int buffCode[19], const unsigned* arr, int startIndex);
+bool findAnswer(const int bitsArr[19], int symbolCodeArr[], int* offset);
 
 char code[CODE_SIZE];
 
@@ -29,6 +33,7 @@ void initTree(NODE* init, char* filenameInput, char* filenameOutput) {
   create_codes(&init, 0);
   change_symbols_to_bits(filenameInput, filenameOutput, length, &init);
   archive(filenameOutput, length, &init);
+  decode(filenameOutput);
 }
 
 //debug
@@ -209,7 +214,203 @@ void archive(char output_filename[], long length, NODE** init) {
   res[len] = '\0';
   FILE* final = fopen(output_filename, "w");
   symmetric(*init, final);
-  fprintf(final, "%d", tail);
+  fprintf(final, "\n%d", tail);
   fprintf(final, "\n%s", res);
   fclose(final);
+}
+
+void decode(char* filenameOutput) {
+//  init vars
+  long length = 0;
+  char header[256*20] = {0};
+  char ans[200] = {0}; // use malloc
+  int ansIndex = 0;
+  int trashBits = 0;
+  int codes[256][20] = {0};
+  for (int i = 0; i < 256; ++i) {
+    for (int j = 0; j < 20; ++j) {
+      codes[i][j] = -1;
+    }
+  }
+//  get file size
+  FILE* output = fopen(filenameOutput, "rb");
+  if (!output) exit(2);
+  fseek(output, 0, SEEK_END);
+  length = ftell(output);
+  fseek(output, 0, SEEK_SET);
+  fclose(output);
+//  read header
+  FILE* final = fopen(filenameOutput, "rb");
+  fgets(header, 256*20, final);
+  printf("%s\n", header);
+//  create a table
+  for (int i = 0; header[i] != '\n';++i) {
+    unsigned char byte;
+    int codeArr[20];
+    for (int j = 0; j < 20; ++j) {codeArr[j] = -1;}
+    if ((header[i] == 48 || header[i] == 49) && header[i-1] == ':') {
+      if (i - 3 >= 0 && (header[i-2] == 'n' || header[i-2] == 'r') && header[i-3] == '\\') {
+        byte = header[i-2] == 'n' ? '\n' : '\r';
+      } else {
+        byte = header[i-2];
+      }
+      for (int j = 0; header[i+j] != ' '; ++j) {
+        codes[byte][j] = header[i+j] - '0';
+      }
+    }
+    length--;
+  }
+  length-=3;
+  for (int i = 0; i < 256; ++i) {
+    if (codes[i][0] != -1) {
+      if (!(i == 9 || i == 10 || i == 13)) {
+        printf("0x%x(%c) -> ", (unsigned char)i, i);
+      } else {
+        switch (i) {
+          case 9:
+            printf("0x%x(\\t) -> ", (unsigned char)i);
+            break;
+          case 10:
+            printf("0x%x(\\n) -> ", (unsigned char)i);
+            break;
+          case 13:
+            printf("0x%x(\\r) -> ", (unsigned char)i);
+            break;
+        }
+      }
+    }
+    for (int j = 0; codes[i][j] != -1; ++j) {
+      printf("%d", codes[i][j]);
+    }
+    if (codes[i][0] != -1) {
+      printf("\n");
+    }
+  }
+  fscanf(final, "%d\n",  &trashBits); //  get bits count
+  printf("trashBits -> %d\n", trashBits);
+//  read file
+  printf("len -> %ld\n", length);
+  unsigned char text[length];
+  memset(text, 0, sizeof(text));
+  for (long i = 0; i < length; ++i) {
+    text[i] = (unsigned char)fgetc(final);
+//    printf("%c", text[i]);
+  }
+// decode
+  bool decodeFlag = true;
+  printf("start decode\n");
+//  create array with All codes (bad solution)
+  unsigned* allCodesArr = (unsigned*)malloc(length*8*sizeof(unsigned));
+  BIT_TO_CHAR symbol;
+  for (int i = 0; i < length; ++i) {
+    symbol.character = text[i];
+    allCodesArr[8*i+0] = symbol.mbit.b1;
+    allCodesArr[8*i+1] = symbol.mbit.b2;
+    allCodesArr[8*i+2] = symbol.mbit.b3;
+    allCodesArr[8*i+3] = symbol.mbit.b4;
+    allCodesArr[8*i+4] = symbol.mbit.b5;
+    allCodesArr[8*i+5] = symbol.mbit.b6;
+    allCodesArr[8*i+6] = symbol.mbit.b7;
+    allCodesArr[8*i+7] = symbol.mbit.b8;
+  }
+  for (int i = 0; i < length * 8; ++i) {
+    printf("%d", allCodesArr[i]);
+  }
+  printf("\n");
+//    read it
+  int buffCode[19] = {0};
+  int offset = 0;
+  int startIndex = 0;
+  while (decodeFlag) {
+    decodeFlag = false;
+    saveBuffToArr(buffCode, allCodesArr, startIndex);
+    printf("new bits: ");
+    for (int i = 0; i < 19; ++i) {
+      if (buffCode[i] != -1) {decodeFlag = true;}
+      printf("%d", buffCode[i]);
+    }
+    printf("\n");
+//    fill buffer
+    for (int i = 0; i < 256; ++i) {
+      if (codes[i][0] != -1) {
+        if (findAnswer(buffCode, codes[i], &offset)) {
+          ans[ansIndex++] = (char)i;
+          printf("int: %d\t", i);
+          break;
+        }
+        offset = 0;
+      }
+    }
+    printf("symbol: %c\n", ans[ansIndex-1]);
+    startIndex += offset;
+//    update buffCode to 19 bits
+  }
+  printf("-------------text-------------\n");
+  for (int i = 0; i < 17; ++i) {
+    printf("%c", ans[i]);
+  }
+  printf("\n");
+  printf("-------------text-------------\n");
+}
+
+
+void printCodes(CHAR_TO_BITS* buffer) {
+  printf("%s\n", buffer->characters);
+  printf("%d", (int)buffer->BITS_20.b1);
+  printf("%d", (int)buffer->BITS_20.b2);
+  printf("%d", (int)buffer->BITS_20.b3);
+  printf("%d", (int)buffer->BITS_20.b4);
+  printf("%d", (int)buffer->BITS_20.b5);
+  printf("%d", (int)buffer->BITS_20.b6);
+  printf("%d", (int)buffer->BITS_20.b7);
+  printf("%d", (int)buffer->BITS_20.b8);
+  printf("|");
+  printf("%d", (int)buffer->BITS_20.b9);
+  printf("%d", (int)buffer->BITS_20.b10);
+  printf("%d", (int)buffer->BITS_20.b11);
+  printf("%d", (int)buffer->BITS_20.b12);
+  printf("%d", (int)buffer->BITS_20.b13);
+  printf("%d", (int)buffer->BITS_20.b14);
+  printf("%d", (int)buffer->BITS_20.b15);
+  printf("%d", (int)buffer->BITS_20.b16);
+  printf("|");
+  printf("%d", (int)buffer->BITS_20.b17);
+  printf("%d", (int)buffer->BITS_20.b18);
+  printf("%d", (int)buffer->BITS_20.b19);
+  printf("\n");
+}
+
+void saveBuffToArr(int buffCode[19], const unsigned* arr, int startIndex) {
+  for (int i = startIndex; i < startIndex+19; ++i) {
+    buffCode[i-startIndex] = i < 8*sizeof(arr) ? (int)arr[i] : -1;
+  }
+}
+
+void fillArrMinusOne(int* arr){
+  int arrLen = sizeof(arr);
+  for (int i = 0; i < arrLen; ++i) {
+    arr[i] = -1;
+  }
+}
+
+bool findAnswer(const int bitsArr[19], int symbolCodeArr[], int* offset) {
+  *offset = 0;
+//  printf("code: ");
+  for (int i = 0; i < 19; ++i) {
+//    printf("%d", bitsArr[i]);
+  }
+//  printf("\nsymbol code: ");
+  for (int i = 0; i < sizeof(symbolCodeArr) && symbolCodeArr[i] != -1; ++i) {
+    printf("%d", symbolCodeArr[i]);
+  }
+  printf("\t");
+//  printf("\nstatus: ");
+  for (int i = 0; i < sizeof(symbolCodeArr) && symbolCodeArr[i] != -1 ; ++i, ++(*offset)) {
+    if (symbolCodeArr[i] != bitsArr[i]) {
+      printf("NO\n");
+      return false;
+    }
+  }
+  printf("YES -> offset: %d\t", *offset);
+  return true;
 }

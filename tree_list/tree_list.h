@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define CODE_SIZE 20 //19 is max + \0
+#define CODE_SIZE 19
 #define SYMBOLS_COUNT 256
 
 #include <stdbool.h>
