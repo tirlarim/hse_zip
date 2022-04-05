@@ -11,4 +11,4 @@ int main() {
   checkFileSize(fileNameInput, fileNameOutput);
   return 0;
 }
-//to remove trash bits print comment tree_list.c line 211 and uncomment line 212
+//to remove trash bits print comment tree_list.c line 223 and uncomment line 224

@@ -252,7 +252,7 @@ void archive(char input_filename[], char output_filename[], long length, NODE** 
   }
   fclose(get_codes);
   fclose(final);
-  //remove(filename_buffer);
+  remove(filename_buffer);
 }
 
 void decode(char* fileNameOutput) {
