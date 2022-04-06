@@ -4,9 +4,11 @@
 
 int main() {
   NODE* binTree = NULL;
-  char fileNameInput[] = "../testDataInput/example.txt",
+  char fileNameInput[] = "../testDataInput/text_1000byte.txt",
        fileNameOutput[] = "../testDataOutput/answer.hse_zip";
-  initTree(binTree, fileNameInput, fileNameOutput);
+  //   buffer file path at tree_list.c line 4
+  init_tree(binTree, fileNameInput, fileNameOutput);
   checkFileSize(fileNameInput, fileNameOutput);
   return 0;
 }
+//to remove trash bits print comment tree_list.c line 223 and uncomment line 224
