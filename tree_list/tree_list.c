@@ -185,7 +185,7 @@ void make_tree(NODE** init) {
 }
 
 void change_symbols_to_codes(char input_filename[], char output_filename[], long length, NODE** init) {
-  char** codes_array = (char**)malloc(256*sizeof(char));
+  char** codes_array = (char**)malloc(256*sizeof(char*));
   for (int i = 0; i < 256; i++) {
     codes_array[i] = (char*)malloc(256*sizeof(char));
   }
