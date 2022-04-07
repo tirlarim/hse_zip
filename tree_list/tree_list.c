@@ -1,5 +1,6 @@
 #include "tree_list.h"
 #include "union.h"
+#include <time.h>
 
 #define filename_buffer "../testDataOutput/buffer.txt"
 
@@ -264,15 +265,15 @@ void archive(char input_filename[], char output_filename[], long length, NODE** 
 }
 
 void decode(char* fileNameOutput) {
-//  init vars
-  long length;
-  char header[256*256] = {0};
+  clock_t startTime, endTime;
+  startTime = clock();
+  char header[BYTES_COUNT*CODE_SIZE] = {0};
   int ansIndex = 0;
-  char decodeFileNameSizeBytes[1000] = {0};
+  char decodeFileName[1000] = {0};
   int decodeFileSizeBytes = 0;
-  int codes[256][256] = {0};
-  for (int i = 0; i < 256; ++i) {
-    for (int j = 0; j < 256; ++j) {
+  int codes[BYTES_COUNT][CODE_SIZE] = {0};
+  for (int i = 0; i < CODE_SIZE; ++i) {
+    for (int j = 0; j < CODE_SIZE; ++j) {
       codes[i][j] = -1;
     }
   }
@@ -280,12 +281,12 @@ void decode(char* fileNameOutput) {
   FILE* output = fopen(fileNameOutput, "rb");
   if (!output) exit(2);
   fseek(output, 0, SEEK_END);
-  length = ftell(output);
+  long length = ftell(output);
   fseek(output, 0, SEEK_SET);
   fclose(output);
 //  read header
   FILE* final = fopen(fileNameOutput, "rb");
-  fgets(header, 256*256, final);
+  fgets(header, BYTES_COUNT*CODE_SIZE, final);
   printf("%s\n", header);
 //  create a table
   for (int i = 0; header[i] != '\n'; ++i) {
@@ -303,7 +304,7 @@ void decode(char* fileNameOutput) {
     length--;
   }
   length-=3;
-  for (int i = 0; i < 256; ++i) {
+  for (int i = 0; i < CODE_SIZE; ++i) {
     if (codes[i][0] != -1) {
       if (!(i == 9 || i == 10 || i == 13)) {
         printf("0x%x(%c) -> ", (unsigned char)i, i);
@@ -330,20 +331,18 @@ void decode(char* fileNameOutput) {
   }
   fscanf(final, "%d\n",  &decodeFileSizeBytes); //  get bits count
   printf("file size -> %d\n", decodeFileSizeBytes);
-  fscanf(final, "%s\n",  decodeFileNameSizeBytes); //  get bits count
-  printf("file name -> %s\n", decodeFileNameSizeBytes);
+  fscanf(final, "%s\n",  decodeFileName); //  get bits count
+  printf("file name -> %s\n", decodeFileName);
 //  read file
   printf("len -> %ld\n", length);
   unsigned char text[length];
-  printf("\n\n\nsosi\n\n\n");
+//  printf("\n\n\nsosi\n\n\n");
   char ans[decodeFileSizeBytes]; // use malloc
   memset(text, 0, sizeof(text));
   for (long i = 0; i < length; ++i) {
     text[i] = (unsigned char)fgetc(final);
-//    printf("%c", text[i]);
   }
 // decode
-
   printf("start decode\n");
   int allCodesArr[255*2];
   int buffCode[255] = {0};
@@ -356,7 +355,6 @@ void decode(char* fileNameOutput) {
       if (codes[i][0] != -1) {
         if (findAnswer(buffCode, codes[i], &offset)) {
           ans[ansIndex++] = (char)i;
-//          printf("startIndex: %d\tint: %d\tsymbol: %c\n", startIndex/8, i, ans[ansIndex-1]);
           startIndex += offset;
           break;
         }
@@ -364,11 +362,14 @@ void decode(char* fileNameOutput) {
       }
     }
     a++;
-//    update buffCode to 255 bits
   }
-  FILE *fp = fopen( "../testDataOutput/answer2.png" , "wb" );;
+  char outputFileName[1000] = "../testDataOutput/";
+  strncat (outputFileName, decodeFileName, sizeof(outputFileName) - strlen(outputFileName) - 1);
+  FILE *fp = fopen(outputFileName, "wb" );;
   fwrite(ans , 1, decodeFileSizeBytes, fp);
   fclose(fp);
+  endTime = clock();
+  printf("decode time: %.2lf sec.\n", (double)(endTime - startTime) / (CLOCKS_PER_SEC));
 }
 
 void saveBuffToArr(int buffCode[255], int arr[255*2], const unsigned char* text, unsigned long textSize, int startIndex) {

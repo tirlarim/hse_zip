@@ -6,9 +6,10 @@
 #include <stdbool.h>
 #include <string.h>
 
-#define CODE_SIZE 19
+#define CODE_SIZE 256
+#define BYTES_COUNT 256
 #define SYMBOLS_COUNT 256
-#define BUFFER_SIZE 1024*1024 //at least 8
+#define BUFFER_SIZE 1024*1024
 
 typedef struct node {
   unsigned char symbol;
