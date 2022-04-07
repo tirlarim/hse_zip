@@ -3,20 +3,21 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
+#include <string.h>
 
 #define CODE_SIZE 19
 #define SYMBOLS_COUNT 256
-
-#include <stdbool.h>
+#define BUFFER_SIZE 1024*1024 //at least 8
 
 typedef struct node {
   unsigned char symbol;
   unsigned int freq;
-  bool isSymbol;
+  bool is_symbol;
   char code[CODE_SIZE];
   struct node *right, *left, *next;
 }NODE;
 
-void initTree();
+void init_tree();
 
 #endif //TREE_LIST_TREE_LIST_H
