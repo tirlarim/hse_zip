@@ -220,7 +220,17 @@ void archive(char input_filename[], char output_filename[], long length, NODE** 
   FILE* final = fopen(output_filename, "w");
   symmetric(*init, final);
   fprintf(final, "\n%ld", length);
-  fprintf(final, "\n%s\n", input_filename);
+
+  int filename_pointer = (int) strlen(input_filename);
+  filename_pointer--;
+  for (; filename_pointer > 0; filename_pointer--) {
+    if (input_filename[filename_pointer] == '/') {
+      filename_pointer++;
+      break;
+    }
+  }
+
+  fprintf(final, "\n%s\n", input_filename + filename_pointer);
   unsigned long long bytes_read = 0;
   unsigned char buffer[BUFFER_SIZE];
   memset(buffer, '0', BUFFER_SIZE);
