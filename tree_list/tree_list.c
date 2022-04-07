@@ -16,7 +16,6 @@ void change_symbols_to_codes(char input_filename[], char output_filename[], long
 void archive(char input_filename[], char output_filename[], long length, NODE** init);
 void decode(char* fileNameOutput);
 void printTreeCodes(const NODE* init);
-void printCodes(CHARS_TO_BITS* buffer);
 void saveBuffToArr(int buffCode[255], int arr[255*2], const unsigned char* text, unsigned long textSize, int startIndex);
 bool findAnswer(const int bitsArr[255], int symbolCodeArr[], int* offset);
 void fillArrMinusOne(int* arr);
@@ -185,7 +184,7 @@ void make_tree(NODE** init) {
 }
 
 void change_symbols_to_codes(char input_filename[], char output_filename[], long length, NODE** init) {
-  char** codes_array = (char**)malloc(256*sizeof(char));
+  char** codes_array = (char**)malloc(256*sizeof(char*));
   for (int i = 0; i < 256; i++) {
     codes_array[i] = (char*)malloc(256*sizeof(char));
   }
@@ -256,11 +255,11 @@ void archive(char input_filename[], char output_filename[], long length, NODE** 
 }
 
 void decode(char* fileNameOutput) {
-  int ansMaxLen = 1000;
+  int ansMaxLen = 100000;
 //  init vars
   long length;
   char header[256*20] = {0};
-  char ans[1000*2] = {0}; // use malloc
+  char ans[100000*2] = {0}; // use malloc
   int ansIndex = 0;
   int trashBits = 0;
   int codes[256][256] = {0};
@@ -278,13 +277,11 @@ void decode(char* fileNameOutput) {
   fclose(output);
 //  read header
   FILE* final = fopen(fileNameOutput, "rb");
-  fgets(header, 256*20, final);
+  fgets(header, 256*256, final);
   printf("%s\n", header);
 //  create a table
   for (int i = 0; header[i] != '\n';++i) {
     unsigned char byte;
-    int codeArr[20];
-    for (int j = 0; j < 20; ++j) {codeArr[j] = -1;}
     if ((header[i] == 48 || header[i] == 49) && header[i-1] == ':') {
       if (i - 3 >= 0 && (header[i-2] == 'n' || header[i-2] == 'r') && header[i-3] == '\\') {
         byte = header[i-2] == 'n' ? '\n' : '\r';
@@ -350,18 +347,18 @@ void decode(char* fileNameOutput) {
   while (a < ansMaxLen) { ////////////// start
     decodeFlag = false;
     saveBuffToArr(buffCode, allCodesArr, text, sizeof(text), startIndex);
-    printf("new bits: ");
-    for (int i = 0; i < 255; ++i) {
-      if (buffCode[i] != -1) {decodeFlag = true;}
-      printf("%d", buffCode[i]);
-    }
-    printf("\n");
+//    printf("new bits: ");
+//    for (int i = 0; i < 255; ++i) {
+//      if (buffCode[i] != -1) {decodeFlag = true;}
+//      printf("%d", buffCode[i]);
+//    }
+//    printf("\n");
 //    fill buffer
     for (int i = 0; i < 256; ++i) {
       if (codes[i][0] != -1) {
         if (findAnswer(buffCode, codes[i], &offset)) {
           ans[ansIndex++] = (char)i;
-          printf("startIndex: %d\tint: %d\tsymbol: %c\n", startIndex/8, i, ans[ansIndex-1]);
+//          printf("startIndex: %d\tint: %d\tsymbol: %c\n", startIndex/8, i, ans[ansIndex-1]);
           startIndex += offset;
           break;
         }
@@ -377,266 +374,6 @@ void decode(char* fileNameOutput) {
   }
   printf("\n");
   printf("-------------text-------------\n");
-}
-
-void printCodes(CHARS_TO_BITS* buffer) {
-  printf("%s\n", buffer->characters);
-  printf("%d", (int)buffer->BITS_255.b1);
-  printf("%d", (int)buffer->BITS_255.b2);
-  printf("%d", (int)buffer->BITS_255.b3);
-  printf("%d", (int)buffer->BITS_255.b4);
-  printf("%d", (int)buffer->BITS_255.b5);
-  printf("%d", (int)buffer->BITS_255.b6);
-  printf("%d", (int)buffer->BITS_255.b7);
-  printf("%d", (int)buffer->BITS_255.b8);
-  printf("%d", (int)buffer->BITS_255.b9);
-  printf("%d", (int)buffer->BITS_255.b10);
-  printf("%d", (int)buffer->BITS_255.b11);
-  printf("%d", (int)buffer->BITS_255.b12);
-  printf("%d", (int)buffer->BITS_255.b13);
-  printf("%d", (int)buffer->BITS_255.b14);
-  printf("%d", (int)buffer->BITS_255.b15);
-  printf("%d", (int)buffer->BITS_255.b16);
-  printf("%d", (int)buffer->BITS_255.b17);
-  printf("%d", (int)buffer->BITS_255.b18);
-  printf("%d", (int)buffer->BITS_255.b19);
-  printf("%d", (int)buffer->BITS_255.b20);
-  printf("%d", (int)buffer->BITS_255.b21);
-  printf("%d", (int)buffer->BITS_255.b22);
-  printf("%d", (int)buffer->BITS_255.b23);
-  printf("%d", (int)buffer->BITS_255.b24);
-  printf("%d", (int)buffer->BITS_255.b25);
-  printf("%d", (int)buffer->BITS_255.b26);
-  printf("%d", (int)buffer->BITS_255.b27);
-  printf("%d", (int)buffer->BITS_255.b28);
-  printf("%d", (int)buffer->BITS_255.b29);
-  printf("%d", (int)buffer->BITS_255.b30);
-  printf("%d", (int)buffer->BITS_255.b31);
-  printf("%d", (int)buffer->BITS_255.b32);
-  printf("%d", (int)buffer->BITS_255.b33);
-  printf("%d", (int)buffer->BITS_255.b34);
-  printf("%d", (int)buffer->BITS_255.b35);
-  printf("%d", (int)buffer->BITS_255.b36);
-  printf("%d", (int)buffer->BITS_255.b37);
-  printf("%d", (int)buffer->BITS_255.b38);
-  printf("%d", (int)buffer->BITS_255.b39);
-  printf("%d", (int)buffer->BITS_255.b40);
-  printf("%d", (int)buffer->BITS_255.b41);
-  printf("%d", (int)buffer->BITS_255.b42);
-  printf("%d", (int)buffer->BITS_255.b43);
-  printf("%d", (int)buffer->BITS_255.b44);
-  printf("%d", (int)buffer->BITS_255.b45);
-  printf("%d", (int)buffer->BITS_255.b46);
-  printf("%d", (int)buffer->BITS_255.b47);
-  printf("%d", (int)buffer->BITS_255.b48);
-  printf("%d", (int)buffer->BITS_255.b49);
-  printf("%d", (int)buffer->BITS_255.b50);
-  printf("%d", (int)buffer->BITS_255.b51);
-  printf("%d", (int)buffer->BITS_255.b52);
-  printf("%d", (int)buffer->BITS_255.b53);
-  printf("%d", (int)buffer->BITS_255.b54);
-  printf("%d", (int)buffer->BITS_255.b55);
-  printf("%d", (int)buffer->BITS_255.b56);
-  printf("%d", (int)buffer->BITS_255.b57);
-  printf("%d", (int)buffer->BITS_255.b58);
-  printf("%d", (int)buffer->BITS_255.b59);
-  printf("%d", (int)buffer->BITS_255.b60);
-  printf("%d", (int)buffer->BITS_255.b61);
-  printf("%d", (int)buffer->BITS_255.b62);
-  printf("%d", (int)buffer->BITS_255.b63);
-  printf("%d", (int)buffer->BITS_255.b64);
-  printf("%d", (int)buffer->BITS_255.b65);
-  printf("%d", (int)buffer->BITS_255.b66);
-  printf("%d", (int)buffer->BITS_255.b67);
-  printf("%d", (int)buffer->BITS_255.b68);
-  printf("%d", (int)buffer->BITS_255.b69);
-  printf("%d", (int)buffer->BITS_255.b70);
-  printf("%d", (int)buffer->BITS_255.b71);
-  printf("%d", (int)buffer->BITS_255.b72);
-  printf("%d", (int)buffer->BITS_255.b73);
-  printf("%d", (int)buffer->BITS_255.b74);
-  printf("%d", (int)buffer->BITS_255.b75);
-  printf("%d", (int)buffer->BITS_255.b76);
-  printf("%d", (int)buffer->BITS_255.b77);
-  printf("%d", (int)buffer->BITS_255.b78);
-  printf("%d", (int)buffer->BITS_255.b79);
-  printf("%d", (int)buffer->BITS_255.b80);
-  printf("%d", (int)buffer->BITS_255.b81);
-  printf("%d", (int)buffer->BITS_255.b82);
-  printf("%d", (int)buffer->BITS_255.b83);
-  printf("%d", (int)buffer->BITS_255.b84);
-  printf("%d", (int)buffer->BITS_255.b85);
-  printf("%d", (int)buffer->BITS_255.b86);
-  printf("%d", (int)buffer->BITS_255.b87);
-  printf("%d", (int)buffer->BITS_255.b88);
-  printf("%d", (int)buffer->BITS_255.b89);
-  printf("%d", (int)buffer->BITS_255.b90);
-  printf("%d", (int)buffer->BITS_255.b91);
-  printf("%d", (int)buffer->BITS_255.b92);
-  printf("%d", (int)buffer->BITS_255.b93);
-  printf("%d", (int)buffer->BITS_255.b94);
-  printf("%d", (int)buffer->BITS_255.b95);
-  printf("%d", (int)buffer->BITS_255.b96);
-  printf("%d", (int)buffer->BITS_255.b97);
-  printf("%d", (int)buffer->BITS_255.b98);
-  printf("%d", (int)buffer->BITS_255.b99);
-  printf("%d", (int)buffer->BITS_255.b100);
-  printf("%d", (int)buffer->BITS_255.b101);
-  printf("%d", (int)buffer->BITS_255.b102);
-  printf("%d", (int)buffer->BITS_255.b103);
-  printf("%d", (int)buffer->BITS_255.b104);
-  printf("%d", (int)buffer->BITS_255.b105);
-  printf("%d", (int)buffer->BITS_255.b106);
-  printf("%d", (int)buffer->BITS_255.b107);
-  printf("%d", (int)buffer->BITS_255.b108);
-  printf("%d", (int)buffer->BITS_255.b109);
-  printf("%d", (int)buffer->BITS_255.b110);
-  printf("%d", (int)buffer->BITS_255.b111);
-  printf("%d", (int)buffer->BITS_255.b112);
-  printf("%d", (int)buffer->BITS_255.b113);
-  printf("%d", (int)buffer->BITS_255.b114);
-  printf("%d", (int)buffer->BITS_255.b115);
-  printf("%d", (int)buffer->BITS_255.b116);
-  printf("%d", (int)buffer->BITS_255.b117);
-  printf("%d", (int)buffer->BITS_255.b118);
-  printf("%d", (int)buffer->BITS_255.b119);
-  printf("%d", (int)buffer->BITS_255.b120);
-  printf("%d", (int)buffer->BITS_255.b121);
-  printf("%d", (int)buffer->BITS_255.b122);
-  printf("%d", (int)buffer->BITS_255.b123);
-  printf("%d", (int)buffer->BITS_255.b124);
-  printf("%d", (int)buffer->BITS_255.b125);
-  printf("%d", (int)buffer->BITS_255.b126);
-  printf("%d", (int)buffer->BITS_255.b127);
-  printf("%d", (int)buffer->BITS_255.b128);
-  printf("%d", (int)buffer->BITS_255.b129);
-  printf("%d", (int)buffer->BITS_255.b130);
-  printf("%d", (int)buffer->BITS_255.b131);
-  printf("%d", (int)buffer->BITS_255.b132);
-  printf("%d", (int)buffer->BITS_255.b133);
-  printf("%d", (int)buffer->BITS_255.b134);
-  printf("%d", (int)buffer->BITS_255.b135);
-  printf("%d", (int)buffer->BITS_255.b136);
-  printf("%d", (int)buffer->BITS_255.b137);
-  printf("%d", (int)buffer->BITS_255.b138);
-  printf("%d", (int)buffer->BITS_255.b139);
-  printf("%d", (int)buffer->BITS_255.b140);
-  printf("%d", (int)buffer->BITS_255.b141);
-  printf("%d", (int)buffer->BITS_255.b142);
-  printf("%d", (int)buffer->BITS_255.b143);
-  printf("%d", (int)buffer->BITS_255.b144);
-  printf("%d", (int)buffer->BITS_255.b145);
-  printf("%d", (int)buffer->BITS_255.b146);
-  printf("%d", (int)buffer->BITS_255.b147);
-  printf("%d", (int)buffer->BITS_255.b148);
-  printf("%d", (int)buffer->BITS_255.b149);
-  printf("%d", (int)buffer->BITS_255.b150);
-  printf("%d", (int)buffer->BITS_255.b151);
-  printf("%d", (int)buffer->BITS_255.b152);
-  printf("%d", (int)buffer->BITS_255.b153);
-  printf("%d", (int)buffer->BITS_255.b154);
-  printf("%d", (int)buffer->BITS_255.b155);
-  printf("%d", (int)buffer->BITS_255.b156);
-  printf("%d", (int)buffer->BITS_255.b157);
-  printf("%d", (int)buffer->BITS_255.b158);
-  printf("%d", (int)buffer->BITS_255.b159);
-  printf("%d", (int)buffer->BITS_255.b160);
-  printf("%d", (int)buffer->BITS_255.b161);
-  printf("%d", (int)buffer->BITS_255.b162);
-  printf("%d", (int)buffer->BITS_255.b163);
-  printf("%d", (int)buffer->BITS_255.b164);
-  printf("%d", (int)buffer->BITS_255.b165);
-  printf("%d", (int)buffer->BITS_255.b166);
-  printf("%d", (int)buffer->BITS_255.b167);
-  printf("%d", (int)buffer->BITS_255.b168);
-  printf("%d", (int)buffer->BITS_255.b169);
-  printf("%d", (int)buffer->BITS_255.b170);
-  printf("%d", (int)buffer->BITS_255.b171);
-  printf("%d", (int)buffer->BITS_255.b172);
-  printf("%d", (int)buffer->BITS_255.b173);
-  printf("%d", (int)buffer->BITS_255.b174);
-  printf("%d", (int)buffer->BITS_255.b175);
-  printf("%d", (int)buffer->BITS_255.b176);
-  printf("%d", (int)buffer->BITS_255.b177);
-  printf("%d", (int)buffer->BITS_255.b178);
-  printf("%d", (int)buffer->BITS_255.b179);
-  printf("%d", (int)buffer->BITS_255.b180);
-  printf("%d", (int)buffer->BITS_255.b181);
-  printf("%d", (int)buffer->BITS_255.b182);
-  printf("%d", (int)buffer->BITS_255.b183);
-  printf("%d", (int)buffer->BITS_255.b184);
-  printf("%d", (int)buffer->BITS_255.b185);
-  printf("%d", (int)buffer->BITS_255.b186);
-  printf("%d", (int)buffer->BITS_255.b187);
-  printf("%d", (int)buffer->BITS_255.b188);
-  printf("%d", (int)buffer->BITS_255.b189);
-  printf("%d", (int)buffer->BITS_255.b190);
-  printf("%d", (int)buffer->BITS_255.b191);
-  printf("%d", (int)buffer->BITS_255.b192);
-  printf("%d", (int)buffer->BITS_255.b193);
-  printf("%d", (int)buffer->BITS_255.b194);
-  printf("%d", (int)buffer->BITS_255.b195);
-  printf("%d", (int)buffer->BITS_255.b196);
-  printf("%d", (int)buffer->BITS_255.b197);
-  printf("%d", (int)buffer->BITS_255.b198);
-  printf("%d", (int)buffer->BITS_255.b199);
-  printf("%d", (int)buffer->BITS_255.b200);
-  printf("%d", (int)buffer->BITS_255.b201);
-  printf("%d", (int)buffer->BITS_255.b202);
-  printf("%d", (int)buffer->BITS_255.b203);
-  printf("%d", (int)buffer->BITS_255.b204);
-  printf("%d", (int)buffer->BITS_255.b205);
-  printf("%d", (int)buffer->BITS_255.b206);
-  printf("%d", (int)buffer->BITS_255.b207);
-  printf("%d", (int)buffer->BITS_255.b208);
-  printf("%d", (int)buffer->BITS_255.b209);
-  printf("%d", (int)buffer->BITS_255.b210);
-  printf("%d", (int)buffer->BITS_255.b211);
-  printf("%d", (int)buffer->BITS_255.b212);
-  printf("%d", (int)buffer->BITS_255.b213);
-  printf("%d", (int)buffer->BITS_255.b214);
-  printf("%d", (int)buffer->BITS_255.b215);
-  printf("%d", (int)buffer->BITS_255.b216);
-  printf("%d", (int)buffer->BITS_255.b217);
-  printf("%d", (int)buffer->BITS_255.b218);
-  printf("%d", (int)buffer->BITS_255.b219);
-  printf("%d", (int)buffer->BITS_255.b220);
-  printf("%d", (int)buffer->BITS_255.b221);
-  printf("%d", (int)buffer->BITS_255.b222);
-  printf("%d", (int)buffer->BITS_255.b223);
-  printf("%d", (int)buffer->BITS_255.b224);
-  printf("%d", (int)buffer->BITS_255.b225);
-  printf("%d", (int)buffer->BITS_255.b226);
-  printf("%d", (int)buffer->BITS_255.b227);
-  printf("%d", (int)buffer->BITS_255.b228);
-  printf("%d", (int)buffer->BITS_255.b229);
-  printf("%d", (int)buffer->BITS_255.b230);
-  printf("%d", (int)buffer->BITS_255.b231);
-  printf("%d", (int)buffer->BITS_255.b232);
-  printf("%d", (int)buffer->BITS_255.b233);
-  printf("%d", (int)buffer->BITS_255.b234);
-  printf("%d", (int)buffer->BITS_255.b235);
-  printf("%d", (int)buffer->BITS_255.b236);
-  printf("%d", (int)buffer->BITS_255.b237);
-  printf("%d", (int)buffer->BITS_255.b238);
-  printf("%d", (int)buffer->BITS_255.b239);
-  printf("%d", (int)buffer->BITS_255.b240);
-  printf("%d", (int)buffer->BITS_255.b241);
-  printf("%d", (int)buffer->BITS_255.b242);
-  printf("%d", (int)buffer->BITS_255.b243);
-  printf("%d", (int)buffer->BITS_255.b244);
-  printf("%d", (int)buffer->BITS_255.b245);
-  printf("%d", (int)buffer->BITS_255.b246);
-  printf("%d", (int)buffer->BITS_255.b247);
-  printf("%d", (int)buffer->BITS_255.b248);
-  printf("%d", (int)buffer->BITS_255.b249);
-  printf("%d", (int)buffer->BITS_255.b250);
-  printf("%d", (int)buffer->BITS_255.b251);
-  printf("%d", (int)buffer->BITS_255.b252);
-  printf("%d", (int)buffer->BITS_255.b253);
-  printf("%d", (int)buffer->BITS_255.b254);
-  printf("%d", (int)buffer->BITS_255.b255);
-  printf("\n");
 }
 
 void saveBuffToArr(int buffCode[255], int arr[255*2], const unsigned char* text, unsigned long textSize, int startIndex) {
@@ -669,16 +406,16 @@ void fillArrMinusOne(int arr[255*2]) {
 
 bool findAnswer(const int bitsArr[255], int symbolCodeArr[256], int* offset) {
   *offset = 0;
-  for (int i = 0; i < 256 && symbolCodeArr[i] != -1; ++i) {
-    printf("%d", symbolCodeArr[i]);
-  }
-  printf("\t");
+//  for (int i = 0; i < 256 && symbolCodeArr[i] != -1; ++i) {
+//    printf("%d", symbolCodeArr[i]);
+//  }
+//  printf("\t");
   for (int i = 0; i < 256 && symbolCodeArr[i] != -1 ; ++i, ++(*offset)) {
     if (symbolCodeArr[i] != bitsArr[i]) {
-      printf("NO\n");
+//      printf("NO\n");
       return false;
     }
   }
-  printf("YES -> offset: %d\t", *offset);
+//  printf("YES -> offset: %d\t", *offset);
   return true;
 }

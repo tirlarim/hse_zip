@@ -4,7 +4,7 @@
 
 int main() {
   NODE* binTree = NULL;
-  char fileNameInput[] = "../testDataInput/text_1000byte.txt",
+  char fileNameInput[] = "../testDataInput/text_100000byte.txt",
        fileNameOutput[] = "../testDataOutput/answer.hse_zip";
   //   buffer file path at tree_list.c line 4
   init_tree(binTree, fileNameInput, fileNameOutput);
