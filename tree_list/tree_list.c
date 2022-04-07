@@ -221,7 +221,7 @@ void archive(char output_filename[], long length, NODE** init) {
 }
 
 void decode(char* filenameOutput) {
-  int ansMaxLen = 100;
+  int ansMaxLen = 1000;
 //  init vars
   long length;
   char header[256*20] = {0};
@@ -243,13 +243,11 @@ void decode(char* filenameOutput) {
   fclose(output);
 //  read header
   FILE* final = fopen(filenameOutput, "rb");
-  fgets(header, 256*20, final);
+  fgets(header, 256*256, final);
   printf("%s\n", header);
 //  create a table
   for (int i = 0; header[i] != '\n';++i) {
     unsigned char byte;
-    int codeArr[20];
-    for (int j = 0; j < 20; ++j) {codeArr[j] = -1;}
     if ((header[i] == 48 || header[i] == 49) && header[i-1] == ':') {
       if (i - 3 >= 0 && (header[i-2] == 'n' || header[i-2] == 'r') && header[i-3] == '\\') {
         byte = header[i-2] == 'n' ? '\n' : '\r';
