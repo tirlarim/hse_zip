@@ -219,9 +219,8 @@ void archive(char input_filename[], char output_filename[], long length, NODE** 
 
   FILE* final = fopen(output_filename, "w");
   symmetric(*init, final);
-  fprintf(final, "\n%d\n", tail);
-//  fprintf(final, "\n%s\n", input_filename);
-
+  fprintf(final, "\n%ld", length);
+  fprintf(final, "\n%s\n", input_filename);
   unsigned long long bytes_read = 0;
   unsigned char buffer[BUFFER_SIZE];
   memset(buffer, '0', BUFFER_SIZE);
@@ -255,13 +254,12 @@ void archive(char input_filename[], char output_filename[], long length, NODE** 
 }
 
 void decode(char* fileNameOutput) {
-  int ansMaxLen = 100000;
 //  init vars
   long length;
-  char header[256*20] = {0};
-  char ans[100000*2] = {0}; // use malloc
+  char header[256*256] = {0};
   int ansIndex = 0;
-  int trashBits = 0;
+  char decodeFileNameSizeBytes[1000] = {0};
+  int decodeFileSizeBytes = 0;
   int codes[256][256] = {0};
   for (int i = 0; i < 256; ++i) {
     for (int j = 0; j < 256; ++j) {
@@ -280,7 +278,7 @@ void decode(char* fileNameOutput) {
   fgets(header, 256*256, final);
   printf("%s\n", header);
 //  create a table
-  for (int i = 0; header[i] != '\n';++i) {
+  for (int i = 0; header[i] != '\n'; ++i) {
     unsigned char byte;
     if ((header[i] == 48 || header[i] == 49) && header[i-1] == ':') {
       if (i - 3 >= 0 && (header[i-2] == 'n' || header[i-2] == 'r') && header[i-3] == '\\') {
@@ -320,40 +318,30 @@ void decode(char* fileNameOutput) {
       printf("\n");
     }
   }
-  fscanf(final, "%d\n",  &trashBits); //  get bits count
-  printf("trashBits -> %d\n", trashBits);
+  fscanf(final, "%d\n",  &decodeFileSizeBytes); //  get bits count
+  printf("file size -> %d\n", decodeFileSizeBytes);
+  fscanf(final, "%s\n",  decodeFileNameSizeBytes); //  get bits count
+  printf("file name -> %s\n", decodeFileNameSizeBytes);
 //  read file
   printf("len -> %ld\n", length);
   unsigned char text[length];
+  printf("\n\n\nsosi\n\n\n");
+  char ans[decodeFileSizeBytes]; // use malloc
   memset(text, 0, sizeof(text));
   for (long i = 0; i < length; ++i) {
     text[i] = (unsigned char)fgetc(final);
 //    printf("%c", text[i]);
   }
 // decode
-  bool decodeFlag = true;
+
   printf("start decode\n");
-//  create array with All codes (bad solution)
   int allCodesArr[255*2];
-  for (int i = 0; i < length; ++i) {
-    printf("%c", text[i]);
-  }
-  printf("\n");
-//    read it
   int buffCode[255] = {0};
   int offset = 0;
   int startIndex = 0;
   int a = 0;
-  while (a < ansMaxLen) { ////////////// start
-    decodeFlag = false;
+  while (a < decodeFileSizeBytes) { ////////////// start
     saveBuffToArr(buffCode, allCodesArr, text, sizeof(text), startIndex);
-//    printf("new bits: ");
-//    for (int i = 0; i < 255; ++i) {
-//      if (buffCode[i] != -1) {decodeFlag = true;}
-//      printf("%d", buffCode[i]);
-//    }
-//    printf("\n");
-//    fill buffer
     for (int i = 0; i < 256; ++i) {
       if (codes[i][0] != -1) {
         if (findAnswer(buffCode, codes[i], &offset)) {
@@ -368,12 +356,9 @@ void decode(char* fileNameOutput) {
     a++;
 //    update buffCode to 255 bits
   }
-  printf("-------------text-------------\n");
-  for (int i = 0; i < ansMaxLen; ++i) {
-    printf("%c", ans[i]);
-  }
-  printf("\n");
-  printf("-------------text-------------\n");
+  FILE *fp = fopen( "../testDataOutput/answer2.png" , "wb" );;
+  fwrite(ans , 1, decodeFileSizeBytes, fp);
+  fclose(fp);
 }
 
 void saveBuffToArr(int buffCode[255], int arr[255*2], const unsigned char* text, unsigned long textSize, int startIndex) {
@@ -406,16 +391,10 @@ void fillArrMinusOne(int arr[255*2]) {
 
 bool findAnswer(const int bitsArr[255], int symbolCodeArr[256], int* offset) {
   *offset = 0;
-//  for (int i = 0; i < 256 && symbolCodeArr[i] != -1; ++i) {
-//    printf("%d", symbolCodeArr[i]);
-//  }
-//  printf("\t");
-  for (int i = 0; i < 256 && symbolCodeArr[i] != -1 ; ++i, ++(*offset)) {
+  for (int i = 0; symbolCodeArr[i] != -1 && i < 256 ; ++i, ++(*offset)) {
     if (symbolCodeArr[i] != bitsArr[i]) {
-//      printf("NO\n");
       return false;
     }
   }
-//  printf("YES -> offset: %d\t", *offset);
   return true;
 }
