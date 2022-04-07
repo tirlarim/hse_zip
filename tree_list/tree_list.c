@@ -277,14 +277,12 @@ void decode(char* fileNameOutput) {
   fseek(output, 0, SEEK_SET);
   fclose(output);
 //  read header
-  FILE* final = fopen(fileNameOutput, "rb");
-  fgets(header, 256*20, final);
+  FILE* final = fopen(filenameOutput, "rb");
+  fgets(header, 256*256, final);
   printf("%s\n", header);
 //  create a table
   for (int i = 0; header[i] != '\n';++i) {
     unsigned char byte;
-    int codeArr[20];
-    for (int j = 0; j < 20; ++j) {codeArr[j] = -1;}
     if ((header[i] == 48 || header[i] == 49) && header[i-1] == ':') {
       if (i - 3 >= 0 && (header[i-2] == 'n' || header[i-2] == 'r') && header[i-3] == '\\') {
         byte = header[i-2] == 'n' ? '\n' : '\r';
@@ -638,7 +636,6 @@ void printCodes(CHARS_TO_BITS* buffer) {
   printf("%d", (int)buffer->BITS_255.b255);
   printf("\n");
 }
-
 void saveBuffToArr(int buffCode[255], int arr[255*2], const unsigned char* text, unsigned long textSize, int startIndex) {
   int offset = startIndex/8;
   int trashBits = startIndex%8;
