@@ -2,9 +2,9 @@
 #include "tree_list/tree_list.h"
 #include "fileWorker/filePrepare.h"
 
-int main() {
+int main(int argc, char* argv[]) {
   NODE* binTree = NULL;
-  char fileNameInput[] = "../testDataInput/1mb.png",
+  char fileNameInput[] = argv[0],
        fileNameOutput[] = "../testDataOutput/answer.hse_zip";
   //   buffer file path at tree_list.c line 4
   init_tree(binTree, fileNameInput, fileNameOutput);
