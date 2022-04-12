@@ -369,7 +369,7 @@ void decode(char* fileNameOutput) {
 //    printf("%d", buffCode[i]);
 //  }
 //  printf("\n");
-  strncat (outputFileName, decodeFileName, sizeof(outputFileName) - fileNameLength - 1);
+  strncat(outputFileName, decodeFileName, sizeof(outputFileName) - fileNameLength - 1);
   FILE *fp = fopen(outputFileName, "wb" );
   while (a < decodeFileSizeBytes) { ////////////// start
     for (int i = 0; i < 256; ++i) {
