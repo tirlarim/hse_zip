@@ -4,7 +4,7 @@
 
 int main() {
   NODE* binTree = NULL;
-  char fileNameInput[] = "../testDataInput/1mb.png",
+  char fileNameInput[] = "../testDataInput/11mb.png",
        fileNameOutput[] = "../testDataOutput/answer.hse_zip";
   init_tree(binTree, fileNameInput, fileNameOutput);
   checkFileSize(fileNameInput, fileNameOutput);

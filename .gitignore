@@ -6,6 +6,11 @@
 ### Zip
 testDataOutput/*.txt
 testDataOutput/*.hse_zip
+testDataOutput/*.png
+testDataOutput/*.jpg
+testDataOutput/*.mp3
+testDataOutput/*.mp4
+testDataOutput/*.mov
 
 ### C template
 # Prerequisites
