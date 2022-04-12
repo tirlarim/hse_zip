@@ -1,5 +1,6 @@
 #include "tree_list.h"
 #include "union.h"
+#include <time.h>
 
 #define filename_buffer "../testDataOutput/buffer.txt"
 
@@ -16,8 +17,8 @@ void change_symbols_to_codes(char input_filename[], char output_filename[], long
 void archive(char input_filename[], char output_filename[], long length, NODE** init);
 void decode(char* fileNameOutput);
 void printTreeCodes(const NODE* init);
-void saveBuffToArr(int buffCode[255], int arr[255*2], const unsigned char* text, unsigned long textSize, int startIndex);
-bool findAnswer(const int bitsArr[255], int symbolCodeArr[], int* offset);
+void prepareBytesBuffer(int buffCode[256+8], FILE* fp, int lastOffset, int startIndex);
+bool findAnswer(const int bitsArr[256], int symbolCodeArr[], int* offset, int* codeLen);
 void fillArrMinusOne(int* arr);
 
 char code[CODE_SIZE];
@@ -264,15 +265,17 @@ void archive(char input_filename[], char output_filename[], long length, NODE** 
 }
 
 void decode(char* fileNameOutput) {
-//  init vars
-  long length;
-  char header[256*256] = {0};
+  clock_t startTime, endTime;
+  startTime = clock();
+  char header[BYTES_COUNT*CODE_SIZE] = {0};
+  char outputFileName[1000] = "../testDataOutput/";
   int ansIndex = 0;
-  char decodeFileNameSizeBytes[1000] = {0};
+  unsigned long fileNameLength = 0;
+  char decodeFileName[1000] = {0};
   int decodeFileSizeBytes = 0;
-  int codes[256][256] = {0};
-  for (int i = 0; i < 256; ++i) {
-    for (int j = 0; j < 256; ++j) {
+  int codes[BYTES_COUNT][CODE_SIZE] = {0};
+  for (int i = 0; i < CODE_SIZE; ++i) {
+    for (int j = 0; j < CODE_SIZE; ++j) {
       codes[i][j] = -1;
     }
   }
@@ -280,12 +283,12 @@ void decode(char* fileNameOutput) {
   FILE* output = fopen(fileNameOutput, "rb");
   if (!output) exit(2);
   fseek(output, 0, SEEK_END);
-  length = ftell(output);
+  unsigned long length = ftell(output);
   fseek(output, 0, SEEK_SET);
   fclose(output);
 //  read header
   FILE* final = fopen(fileNameOutput, "rb");
-  fgets(header, 256*256, final);
+  fgets(header, BYTES_COUNT*CODE_SIZE, final);
   printf("%s\n", header);
 //  create a table
   for (int i = 0; header[i] != '\n'; ++i) {
@@ -302,8 +305,8 @@ void decode(char* fileNameOutput) {
     }
     length--;
   }
-  length-=3;
-  for (int i = 0; i < 256; ++i) {
+  length-=5;
+  for (int i = 0; i < CODE_SIZE; ++i) {
     if (codes[i][0] != -1) {
       if (!(i == 9 || i == 10 || i == 13)) {
         printf("0x%x(%c) -> ", (unsigned char)i, i);
@@ -330,81 +333,137 @@ void decode(char* fileNameOutput) {
   }
   fscanf(final, "%d\n",  &decodeFileSizeBytes); //  get bits count
   printf("file size -> %d\n", decodeFileSizeBytes);
-  fscanf(final, "%s\n",  decodeFileNameSizeBytes); //  get bits count
-  printf("file name -> %s\n", decodeFileNameSizeBytes);
-//  read file
+  fscanf(final, "%s\n",  decodeFileName); //  get bits count
+  printf("file name -> %s\n", decodeFileName);
+  fileNameLength = strlen(decodeFileName);
+  length -= fileNameLength;
   printf("len -> %ld\n", length);
-  unsigned char text[length];
-  printf("\n\n\nsosi\n\n\n");
-  char ans[decodeFileSizeBytes]; // use malloc
-  memset(text, 0, sizeof(text));
-  for (long i = 0; i < length; ++i) {
-    text[i] = (unsigned char)fgetc(final);
-//    printf("%c", text[i]);
-  }
-// decode
-
+  char ans[1000+1];
+//  char ans[decodeFileSizeBytes];
   printf("start decode\n");
-  int allCodesArr[255*2];
-  int buffCode[255] = {0};
+//  int allCodesArr[256*2];
+  int buffCode[256+8] = {0};
   int offset = 0;
   int startIndex = 0;
+  int lastOffset = 0;
   int a = 0;
+  BIT_TO_CHAR symbol;
+  fillArrMinusOne(buffCode);
+  for (int i = 0; i < 32 && i < length; ++i) {
+    symbol.character = (unsigned char)getc(final);
+    buffCode[8*i+0] = (int)symbol.mbit.b1;
+    buffCode[8*i+1] = (int)symbol.mbit.b2;
+    buffCode[8*i+2] = (int)symbol.mbit.b3;
+    buffCode[8*i+3] = (int)symbol.mbit.b4;
+    buffCode[8*i+4] = (int)symbol.mbit.b5;
+    buffCode[8*i+5] = (int)symbol.mbit.b6;
+    buffCode[8*i+6] = (int)symbol.mbit.b7;
+    buffCode[8*i+7] = (int)symbol.mbit.b8;
+  }
+//  printf("new bits: ");
+//  for (int i = 0; i < 256; ++i) {
+//    printf("%d", buffCode[i]);
+//  }
+//  printf("|");
+//  for (int i = 256; i < 256+8; ++i) {
+//    printf("%d", buffCode[i]);
+//  }
+//  printf("\n");
+  strncat(outputFileName, decodeFileName, sizeof(outputFileName) - fileNameLength - 1);
+  FILE *fp = fopen(outputFileName, "wb" );
   while (a < decodeFileSizeBytes) { ////////////// start
-    saveBuffToArr(buffCode, allCodesArr, text, sizeof(text), startIndex);
     for (int i = 0; i < 256; ++i) {
       if (codes[i][0] != -1) {
-        if (findAnswer(buffCode, codes[i], &offset)) {
+        if (findAnswer(buffCode, codes[i], &offset, &lastOffset)) {
           ans[ansIndex++] = (char)i;
-//          printf("startIndex: %d\tint: %d\tsymbol: %c\n", startIndex/8, i, ans[ansIndex-1]);
+//          printf("symbol: %c\tcode: ", i);
+//          for (int j = 0; codes[i][j] != -1; ++j) {
+//            printf("%d", codes[i][j]);
+//          }
+//          printf("\n");
           startIndex += offset;
+          if (a % 1000 == 0 || a == decodeFileSizeBytes-1) {
+            fwrite(ans , 1, ansIndex, fp);
+            ansIndex = 0;
+            memset(ans, 0, sizeof(ans));
+          }
           break;
         }
-        offset = 0;
       }
     }
+    prepareBytesBuffer(buffCode, final, lastOffset, startIndex);
+//    printf("new bits: ");
+//    for (int i = 0; i < 256; ++i) {
+//      printf("%d", buffCode[i]);
+//    }
+//    printf("|");
+//    for (int i = 256; i < 256+8; ++i) {
+//      printf("%d", buffCode[i]);
+//    }
+//    printf("\n");
     a++;
-//    update buffCode to 255 bits
   }
-  FILE *fp = fopen( "../testDataOutput/answer2.png" , "wb" );;
-  fwrite(ans , 1, decodeFileSizeBytes, fp);
   fclose(fp);
+  endTime = clock();
+  printf("decode time: %.2lf sec.\n", (double)(endTime - startTime) / (CLOCKS_PER_SEC));
 }
 
-void saveBuffToArr(int buffCode[255], int arr[255*2], const unsigned char* text, unsigned long textSize, int startIndex) {
-  int offset = startIndex/8;
-  int trashBits = startIndex%8;
+void prepareBytesBuffer(int buffCode[256+8], FILE* fp, int lastOffset, int startIndex) {
+  int trashBitesCount = 0;
+  bool writeFlag = true;
   BIT_TO_CHAR symbol;
-  fillArrMinusOne(arr);
-  for (int i = offset, j = 0; i < textSize && i < offset+32+8; ++i, ++j) {
-    symbol.character = text[i];
-    arr[8*j+0] = (int)symbol.mbit.b1;
-    arr[8*j+1] = (int)symbol.mbit.b2;
-    arr[8*j+2] = (int)symbol.mbit.b3;
-    arr[8*j+3] = (int)symbol.mbit.b4;
-    arr[8*j+4] = (int)symbol.mbit.b5;
-    arr[8*j+5] = (int)symbol.mbit.b6;
-    arr[8*j+6] = (int)symbol.mbit.b7;
-    arr[8*j+7] = (int)symbol.mbit.b8;
+  for (int i = 256; i < 256+8; ++i) {
+    if (buffCode[i] != -1) {
+      ++trashBitesCount;
+    }
   }
-  for (int i = 0; i < 32*8-1; ++i) {
-    buffCode[i] = arr[i+trashBits];
+  for (int i = 0; i < 256 + 8 - lastOffset; ++i) {
+    buffCode[i] = buffCode[i+lastOffset];
+  }
+//  printf("offset: %d\t", lastOffset);
+  for (int i = 256+8-lastOffset; i < 256+8; ++i) {
+    buffCode[i] = -1;
+  }
+  for (int i = 256; i < 256+8; ++i) {
+    if (buffCode[i] != -1) {
+      writeFlag = false;
+      break;
+    }
+  }
+  if (writeFlag && buffCode[256-1] == -1) {
+    lastOffset -= trashBitesCount;
+//    printf("write: Yes\n");
+    for (int i = (256 - lastOffset)/8, j = 0; j < lastOffset; ++i, j+=8) { // i = 31 /lf = 5 / one iteration
+      symbol.character = (unsigned char)getc(fp);
+      buffCode[lastOffset%8 != 0 ? 8*i+0+(8-(lastOffset%8)) : 8*i+0] = (int)symbol.mbit.b1; // i = 19 /lf = 100 lf%8 = 4 /need 156
+      buffCode[lastOffset%8 != 0 ? 8*i+1+(8-(lastOffset%8)) : 8*i+1] = (int)symbol.mbit.b2; //i = 31 /lf = 8 lf%8 = 0 /need 248
+      buffCode[lastOffset%8 != 0 ? 8*i+2+(8-(lastOffset%8)) : 8*i+2] = (int)symbol.mbit.b3;
+      buffCode[lastOffset%8 != 0 ? 8*i+3+(8-(lastOffset%8)) : 8*i+3] = (int)symbol.mbit.b4;
+      buffCode[lastOffset%8 != 0 ? 8*i+4+(8-(lastOffset%8)) : 8*i+4] = (int)symbol.mbit.b5;
+      buffCode[lastOffset%8 != 0 ? 8*i+5+(8-(lastOffset%8)) : 8*i+5] = (int)symbol.mbit.b6;
+      buffCode[lastOffset%8 != 0 ? 8*i+6+(8-(lastOffset%8)) : 8*i+6] = (int)symbol.mbit.b7;
+      buffCode[lastOffset%8 != 0 ? 8*i+7+(8-(lastOffset%8)) : 8*i+7] = (int)symbol.mbit.b8;
+    }
+  } else {
+//    printf("write: No\n");
   }
 }
 
-void fillArrMinusOne(int arr[255*2]) {
-  int arrLen = 255*2;
+void fillArrMinusOne(int arr[256*2]) {
+  int arrLen = 256*2;
   for (int i = 0; i < arrLen; ++i) {
     arr[i] = -1;
   }
 }
 
-bool findAnswer(const int bitsArr[255], int symbolCodeArr[256], int* offset) {
+bool findAnswer(const int bitsArr[256], int symbolCodeArr[256], int* offset, int* codeLen) {
   *offset = 0;
   for (int i = 0; symbolCodeArr[i] != -1 && i < 256 ; ++i, ++(*offset)) {
     if (symbolCodeArr[i] != bitsArr[i]) {
       return false;
     }
+    *codeLen = i+1;
   }
+//  printf("codeLen: %d\t", *codeLen);
   return true;
 }

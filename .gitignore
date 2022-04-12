@@ -2,10 +2,16 @@
 #CMake
 /cmake-build-debug/
 /build/
+.DS_Store
 
 ### Zip
-testDataOutput/*.txt
-testDataOutput/*.hse_zip
+testDataOutput/*.*
+!testDataOutput/readme.md
+
+###Videos
+testDataInput/*.mp4
+testDataInput/*.mov
+testDataInput/*.webm
 
 ### C template
 # Prerequisites
