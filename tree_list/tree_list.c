@@ -361,7 +361,7 @@ void decode(char* fileNameOutput) {
   printf("file name -> %s\n", decodeFileName);
   fileNameLength = strlen(decodeFileName);
   length -= fileNameLength;
-  printf("len -> %ld\n", length);
+  printf("file length -> %ld\n", length);
   char ans[1000+1];
 //  char ans[decodeFileSizeBytes];
   printf("start decode\n");
