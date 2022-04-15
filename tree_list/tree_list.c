@@ -24,15 +24,18 @@ void fillArrMinusOne(int* arr);
 char code[CODE_SIZE];
 
 void init_tree(NODE* init, char* fileNameInput, char* fileNameOutput) {
+  clock_t startTime, endTime;
+  startTime = clock();
   int* freq = init_array_with_zeroes(SYMBOLS_COUNT);
   long length = 0;
   get_chars_frequency(fileNameInput,freq, &length);
   make_list(&init, freq);
   make_tree(&init);
-//  print_tree_on_side(init, 0); // print tree
   create_codes(&init, 0);
   change_symbols_to_codes(fileNameInput, filename_buffer, length, &init);
   archive(fileNameInput, fileNameOutput, length, &init);
+  endTime = clock();
+  printf("archive time: %.2lf sec.\n", (double)(endTime - startTime) / (CLOCKS_PER_SEC));
   decode(fileNameOutput);
 }
 
@@ -126,8 +129,17 @@ void get_chars_frequency(char filename[], int* freq_arr, long* length) {
   fseek(input, 0, SEEK_END);
   *length = ftell(input);
   fseek(input, 0, SEEK_SET);
-  for (int i = 0; i < *length; i++) {
-    freq_arr[(unsigned char)fgetc(input)]++;
+  unsigned char buffer[BUFFER_SIZE];
+  int first_time = 1;
+  int count = *length;
+  unsigned long long bytes_read = 0;
+  while (first_time || count > 0) {
+    first_time = 0;
+    count -= BUFFER_SIZE;
+    bytes_read = fread(buffer, sizeof(unsigned char), BUFFER_SIZE, input);
+    for (int i = 0; i < bytes_read; i++) {
+      freq_arr[(int) buffer[i]]++;
+    }
   }
   fclose(input);
 }
@@ -218,7 +230,7 @@ void archive(char input_filename[], char output_filename[], long length, NODE** 
   int tail = len * 8 - count;
   if (count % 8 == 0) len--, tail = 0;
 
-  FILE* final = fopen(output_filename, "w");
+  FILE* final = fopen(output_filename, "wb");
   symmetric(*init, final);
   fprintf(final, "\n%ld", length);
 
@@ -289,7 +301,7 @@ void decode(char* fileNameOutput) {
 //  read header
   FILE* final = fopen(fileNameOutput, "rb");
   fgets(header, BYTES_COUNT*CODE_SIZE, final);
-  printf("%s\n", header);
+//  printf("%s\n", header);
 //  create a table
   for (int i = 0; header[i] != '\n'; ++i) {
     unsigned char byte;
@@ -306,31 +318,31 @@ void decode(char* fileNameOutput) {
     length--;
   }
   length-=5;
-  for (int i = 0; i < CODE_SIZE; ++i) {
-    if (codes[i][0] != -1) {
-      if (!(i == 9 || i == 10 || i == 13)) {
-        printf("0x%x(%c) -> ", (unsigned char)i, i);
-      } else {
-        switch (i) {
-          case 9:
-            printf("0x%x(\\t) -> ", (unsigned char)i);
-            break;
-          case 10:
-            printf("0x%x(\\n) -> ", (unsigned char)i);
-            break;
-          case 13:
-            printf("0x%x(\\r) -> ", (unsigned char)i);
-            break;
-        }
-      }
-    }
-    for (int j = 0; codes[i][j] != -1; ++j) {
-      printf("%d", codes[i][j]);
-    }
-    if (codes[i][0] != -1) {
-      printf("\n");
-    }
-  }
+//  for (int i = 0; i < CODE_SIZE; ++i) {
+//    if (codes[i][0] != -1) {
+//      if (!(i == 9 || i == 10 || i == 13)) {
+//        printf("0x%x(%c) -> ", (unsigned char)i, i);
+//      } else {
+//        switch (i) {
+//          case 9:
+//            printf("0x%x(\\t) -> ", (unsigned char)i);
+//            break;
+//          case 10:
+//            printf("0x%x(\\n) -> ", (unsigned char)i);
+//            break;
+//          case 13:
+//            printf("0x%x(\\r) -> ", (unsigned char)i);
+//            break;
+//        }
+//      }
+//    }
+//    for (int j = 0; codes[i][j] != -1; ++j) {
+//      printf("%d", codes[i][j]);
+//    }
+//    if (codes[i][0] != -1) {
+//      printf("\n");
+//    }
+//  }
   fscanf(final, "%d\n",  &decodeFileSizeBytes); //  get bits count
   printf("file size -> %d\n", decodeFileSizeBytes);
   fscanf(final, "%s\n",  decodeFileName); //  get bits count
@@ -373,13 +385,10 @@ void decode(char* fileNameOutput) {
 //  printf("\n");
   strncat(outputFileName, decodeFileName, sizeof(outputFileName) - fileNameLength - 1);
   FILE *fp = fopen(outputFileName, "wb" );
-  bool writeFlag = true;
-  while (writeFlag) { ////////////// start
-    writeFlag = false;
+  while (a < decodeFileSizeBytes) { ////////////// start
     for (int i = 0; i < 256; ++i) {
       if (codes[i][0] != -1) {
         if (findAnswer(buffCode, codes[i], &offset, &lastOffset)) {
-          writeFlag = true;
           ans[ansIndex++] = (char)i;
 //          printf("symbol: %c\tcode: ", i);
 //          for (int j = 0; codes[i][j] != -1; ++j) {
