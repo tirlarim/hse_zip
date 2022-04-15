@@ -4,7 +4,7 @@
 
 int main() {
   NODE* binTree = NULL;
-  char fileNameInput[] = "../testDataInput/11mb.png",
+  char fileNameInput[] = "../testDataInput/text_1000byte.txt",
        fileNameOutput[] = "../testDataOutput/answer.hse_zip";
   printf("working on: %s\n", fileNameInput);
   init_tree(binTree, fileNameInput, fileNameOutput);

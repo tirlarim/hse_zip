@@ -4,6 +4,12 @@
 
 #define filename_buffer "../testDataOutput/buffer.txt"
 
+typedef struct triple {
+    unsigned char symbol;
+    unsigned int freq;
+    char code[CODE_SIZE];
+}TRIPLE;
+
 int* init_array_with_zeroes(int count);
 void get_chars_frequency(char filename[], int* freq_arr, long* length);
 void add_to_list (NODE** init, unsigned int freq, unsigned char symbol, NODE* branch);
@@ -11,7 +17,7 @@ void make_list(NODE** init, int* freq_arr);
 void make_tree(NODE** init);
 void print_tree_on_side(const NODE* init, int level);
 void create_codes(NODE** init, int level);
-void symmetric(NODE* init, FILE* file);
+void symmetric(NODE* init, FILE* file, TRIPLE* arr);
 void find_and_copy_code(NODE** init, char** code_array, int symbol);
 void change_symbols_to_codes(char input_filename[], char output_filename[], long length, NODE** init);
 void archive(char input_filename[], char output_filename[], long length, NODE** init);
@@ -21,18 +27,19 @@ void prepareBytesBuffer(int buffCode[256+8], FILE* fp, int lastOffset, int start
 bool findAnswer(const int bitsArr[256], int symbolCodeArr[], int* offset, int* codeLen);
 void fillArrMinusOne(int* arr);
 
-char code[CODE_SIZE];
+char code[CODE_SIZE]; //temporal array for codes
 
 void init_tree(NODE* init, char* fileNameInput, char* fileNameOutput) {
-  int* freq = init_array_with_zeroes(SYMBOLS_COUNT);
-  long length = 0;
+  int* freq = init_array_with_zeroes(SYMBOLS_COUNT); //symbols frequency
+  long length = 0; //symbols count
   get_chars_frequency(fileNameInput,freq, &length);
   make_list(&init, freq);
+  free(freq);
   make_tree(&init);
 //  print_tree_on_side(init, 0); // print tree
   create_codes(&init, 0);
-  change_symbols_to_codes(fileNameInput, filename_buffer, length, &init);
-  archive(fileNameInput, fileNameOutput, length, &init);
+  change_symbols_to_codes(fileNameInput, filename_buffer, length, &init); //write 10101.. to buffer.txt
+  archive(fileNameInput, fileNameOutput, length, &init); //take codes from buffer.txt and unite them
   decode(fileNameOutput);
 }
 
@@ -53,18 +60,15 @@ void print_tree_on_side(const NODE* init, int level) {
   }
 }
 
-void symmetric(NODE* init, FILE* file) {
+void symmetric(NODE* init, FILE* file, TRIPLE* arr) {
   if (init) {
-    symmetric(init->left, file);
+    symmetric(init->left, file, arr);
     if (init->is_symbol) {
-      if (init->symbol != '\n' && init->symbol != '\r')
-        fprintf(file, "%c:%s ", init->symbol, init->code);
-      else if (init->symbol == '\n')
-        fprintf(file, "%s:%s ", "\\n", init->code);
-      else if (init->symbol == '\r')
-        fprintf(file, "%s:%s ", "\\r", init->code);
+      arr[(int) init->symbol].symbol = init->symbol; //array for print symbols in frequency order
+      arr[(int) init->symbol].freq = init->freq;
+      strcpy(arr[(int) init->symbol].code, init->code);
     }
-    symmetric(init->right, file);
+    symmetric(init->right, file, arr);
   }
 }
 
@@ -126,8 +130,17 @@ void get_chars_frequency(char filename[], int* freq_arr, long* length) {
   fseek(input, 0, SEEK_END);
   *length = ftell(input);
   fseek(input, 0, SEEK_SET);
-  for (int i = 0; i < *length; i++) {
-    freq_arr[(unsigned char)fgetc(input)]++;
+  unsigned char buffer[BUFFER_SIZE];
+  int first_time = 1;
+  int count = *length;
+  unsigned long long bytes_read = 0;
+  while (first_time || count > 0) {
+    first_time = 0;
+    count -= BUFFER_SIZE;
+    bytes_read = fread(buffer, sizeof(unsigned char), BUFFER_SIZE, input);
+    for (int i = 0; i < bytes_read; i++) {
+      freq_arr[(int) buffer[i]]++;
+    }
   }
   fclose(input);
 }
@@ -205,6 +218,7 @@ void change_symbols_to_codes(char input_filename[], char output_filename[], long
       fprintf(output, "%s", codes_array[(int)buffer[i]]);
     }
   }
+  free(codes_array);
   fclose(input);
   fclose(output);
 }
@@ -218,15 +232,35 @@ void archive(char input_filename[], char output_filename[], long length, NODE** 
   int tail = len * 8 - count;
   if (count % 8 == 0) len--, tail = 0;
 
-  FILE* final = fopen(output_filename, "w");
-  symmetric(*init, final);
-  fprintf(final, "\n%ld", length);
+  FILE* final = fopen(output_filename, "wb");
 
+  TRIPLE* freq_array = (TRIPLE*)malloc(256*sizeof(TRIPLE));
+  for (int i = 0; i < 256; i++) {
+    freq_array[i].freq = 0;
+  }
+  symmetric(*init, final, freq_array);//get symbol, freq and code to array of TRIPLE
+  for (int i = 0; i < 256; i++) { //bubble sort
+    for (int j = i + 1; j < 256; j++) {
+      if (freq_array[j].freq > freq_array[i].freq) {
+        TRIPLE temp = freq_array[i];
+        freq_array[i] = freq_array[j];
+        freq_array[j] = temp;
+      }
+    }
+  }
+
+  for (int i = 0; i < 256; i++) { //print symbols and codes
+    if (freq_array[i].freq == 0)
+      break;
+    fprintf(final, "%c:%s", freq_array[i].symbol, freq_array[i].code);
+  }
+
+  fprintf(final, "\n%ld", length);
   int filename_pointer = (int) strlen(input_filename);
   filename_pointer--;
   for (; filename_pointer > 0; filename_pointer--) {
     if (input_filename[filename_pointer] == '/') {
-      filename_pointer++;
+      filename_pointer++; //to find beginning of filename
       break;
     }
   }
@@ -259,6 +293,7 @@ void archive(char input_filename[], char output_filename[], long length, NODE** 
     }
     fwrite(buffer, sizeof(unsigned char), buffer_pointer, final);
   }
+  free(freq_array);
   fclose(get_codes);
   fclose(final);
   remove(filename_buffer);
