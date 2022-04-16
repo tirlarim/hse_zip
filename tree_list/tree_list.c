@@ -324,10 +324,10 @@ void decode(char* fileNameOutput) {
   clock_t startTime, endTime;
   startTime = clock();
   char header[BYTES_COUNT*CODE_SIZE] = {0};
-  char headerSorted[BYTES_COUNT] = {0};
+  unsigned char headerSorted[BYTES_COUNT] = {0}; int headerSortedIndex = 0;
   char outputFileName[1000] = "../testDataOutput/";
   int ansIndex = 0;
-  unsigned long fileNameLength = 0;
+  unsigned long fileNameLength;
   char decodeFileName[1000] = {0};
   int decodeFileSizeBytes = 0;
   int codes[BYTES_COUNT][CODE_SIZE] = {0};
@@ -361,6 +361,7 @@ void decode(char* fileNameOutput) {
     unsigned char byte;
     if (header[i-1] == ':' && (header[i] == 48 || header[i] == 49)) {
       byte = header[i-2];
+      headerSorted[headerSortedIndex++] = byte;
 //      printf("byte: %c\n", byte);
 //      printf("code: ");
       for (int j = 0;(header[i] == 48 || header[i] == 49) && (header[i+1] != ':' || (header[i+1] == ':' && header[i+2] == ':')); ++i) {
@@ -376,7 +377,7 @@ void decode(char* fileNameOutput) {
     for (int i = 0; i < CODE_SIZE; ++i) {
       if (codes[i][0] != -1) {
         if (!(i == 9 || i == 10 || i == 13)) {
-          printf("0x%x(%c) -> ", (unsigned char)i, i);
+          printf("0x%x(%c, %d) -> ", (unsigned char)i, i, i);
         } else {
           switch (i) {
             case 9:
@@ -449,13 +450,13 @@ void decode(char* fileNameOutput) {
       printProgress(((double)a/(double)decodeFileSizeBytes)+0.01);
     }
     for (int i = 0; i < 256; ++i) {
-      if (codes[i][0] != -1) {
-        if (findAnswer(buffCode, codes[i], &offset, &lastOffset)) {
-          ans[ansIndex++] = (char)i;
+      if (codes[(int)headerSorted[i]][0] != -1) {
+        if (findAnswer(buffCode, codes[(int)headerSorted[i]], &offset, &lastOffset)) {
+          ans[ansIndex++] = (char)headerSorted[i];
           if (DEBUG_FLAG) {
             printf("symbol: %c\tcode: ", i);
-            for (int j = 0; codes[i][j] != -1; ++j) {
-              printf("%d", codes[i][j]);
+            for (int j = 0; codes[(int)headerSorted[i]][j] != -1; ++j) {
+              printf("%d", codes[(int)headerSorted[i]][j]);
             }
             printf("\n");
           }
