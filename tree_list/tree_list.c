@@ -2,8 +2,6 @@
 #include "union.h"
 #include <time.h>
 
-#define filename_buffer "../testDataOutput/buffer.txt"
-
 int* init_array_with_zeroes(int count);
 void get_chars_frequency(char filename[], int* freq_arr, long* length);
 void add_to_list (NODE** init, unsigned int freq, unsigned char symbol, NODE* branch);
@@ -11,29 +9,30 @@ void make_list(NODE** init, int* freq_arr);
 void make_tree(NODE** init);
 void print_tree_on_side(const NODE* init, int level);
 void create_codes(NODE** init, int level);
-void symmetric(NODE* init, FILE* file);
+void symmetric(NODE* init, FILE* file, TRIPLE* arr);
 void find_and_copy_code(NODE** init, char** code_array, int symbol);
 void change_symbols_to_codes(char input_filename[], char output_filename[], long length, NODE** init);
 void archive(char input_filename[], char output_filename[], long length, NODE** init);
 void decode(char* fileNameOutput);
 void printTreeCodes(const NODE* init);
 void prepareBytesBuffer(int buffCode[256+8], FILE* fp, int lastOffset, unsigned long* fileLen);
-bool findAnswer(const int bitsArr[256], int symbolCodeArr[], int* offset, int* codeLen);
+bool findAnswer(const int bitsArr[256], const int symbolCodeArr[], int* offset, int* codeLen);
 void fillArrMinusOne(int* arr);
 
-char code[CODE_SIZE];
+char code[CODE_SIZE]; //temporal array for codes
 
 void init_tree(NODE* init, char* fileNameInput, char* fileNameOutput) {
   clock_t startTime, endTime;
   startTime = clock();
-  int* freq = init_array_with_zeroes(SYMBOLS_COUNT);
-  long length = 0;
+  int* freq = init_array_with_zeroes(SYMBOLS_COUNT); //symbols frequency
+  long length = 0; //symbols count
   get_chars_frequency(fileNameInput,freq, &length);
   make_list(&init, freq);
+  free(freq);
   make_tree(&init);
   create_codes(&init, 0);
-  change_symbols_to_codes(fileNameInput, filename_buffer, length, &init);
-  archive(fileNameInput, fileNameOutput, length, &init);
+  change_symbols_to_codes(fileNameInput, filename_buffer, length, &init); //write 10101.. to buffer.txt
+  archive(fileNameInput, fileNameOutput, length, &init); //take codes from buffer.txt and unite them
   endTime = clock();
   printf("archive time: %.2lf sec.\n", (double)(endTime - startTime) / (CLOCKS_PER_SEC));
   decode(fileNameOutput);
@@ -56,18 +55,15 @@ void print_tree_on_side(const NODE* init, int level) {
   }
 }
 
-void symmetric(NODE* init, FILE* file) {
+void symmetric(NODE* init, FILE* file, TRIPLE* arr) {
   if (init) {
-    symmetric(init->left, file);
+    symmetric(init->left, file, arr);
     if (init->is_symbol) {
-      if (init->symbol != '\n' && init->symbol != '\r')
-        fprintf(file, "%c:%s ", init->symbol, init->code);
-      else if (init->symbol == '\n')
-        fprintf(file, "%s:%s ", "\\n", init->code);
-      else if (init->symbol == '\r')
-        fprintf(file, "%s:%s ", "\\r", init->code);
+      arr[(int) init->symbol].symbol = init->symbol; //array for print symbols in frequency order
+      arr[(int) init->symbol].freq = init->freq;
+      strcpy(arr[(int) init->symbol].code, init->code);
     }
-    symmetric(init->right, file);
+    symmetric(init->right, file, arr);
   }
 }
 
@@ -217,6 +213,7 @@ void change_symbols_to_codes(char input_filename[], char output_filename[], long
       fprintf(output, "%s", codes_array[(int)buffer[i]]);
     }
   }
+  free(codes_array);
   fclose(input);
   fclose(output);
 }
@@ -231,14 +228,44 @@ void archive(char input_filename[], char output_filename[], long length, NODE** 
   if (count % 8 == 0) len--, tail = 0;
 
   FILE* final = fopen(output_filename, "wb");
-  symmetric(*init, final);
-  fprintf(final, "\n%ld", length);
+  TRIPLE* freq_array = (TRIPLE*)malloc(256*sizeof(TRIPLE));
+  for (int i = 0; i < 256; i++) {
+    freq_array[i].freq = 0;
+  }
+  symmetric(*init, final, freq_array);//get symbol, freq and code to array of TRIPLE
+  for (int i = 0; i < 256; i++) { //bubble sort
+    for (int j = i + 1; j < 256; j++) {
+      if (freq_array[j].freq > freq_array[i].freq) {
+        TRIPLE temp = freq_array[i];
+        freq_array[i] = freq_array[j];
+        freq_array[j] = temp;
+      }
+    }
+  }
 
+  for (int i = 0; i < 256; i++) { //print symbols and codes
+    if (freq_array[i].freq == 0)
+      break;
+    fprintf(final, "%c:%s", freq_array[i].symbol, freq_array[i].code);
+//    switch (freq_array[i].symbol) {
+//      case '\n':
+//        fprintf(final, "%s:%s", "\n", freq_array[i].code);
+//        break;
+//      case '\r':
+//        fprintf(final, "%s:%s", "\r", freq_array[i].code);
+//        break;
+//      default:
+//        fprintf(final, "%c:%s", freq_array[i].symbol, freq_array[i].code);
+//        break;
+//    }
+  }
+
+  fprintf(final, "\n\n%ld", length);
   int filename_pointer = (int) strlen(input_filename);
   filename_pointer--;
   for (; filename_pointer > 0; filename_pointer--) {
     if (input_filename[filename_pointer] == '/') {
-      filename_pointer++;
+      filename_pointer++; //to find beginning of filename
       break;
     }
   }
@@ -271,6 +298,7 @@ void archive(char input_filename[], char output_filename[], long length, NODE** 
     }
     fwrite(buffer, sizeof(unsigned char), buffer_pointer, final);
   }
+  free(freq_array);
   fclose(get_codes);
   fclose(final);
   remove(filename_buffer);
@@ -288,9 +316,10 @@ void decode(char* fileNameOutput) {
   clock_t startTime, endTime;
   startTime = clock();
   char header[BYTES_COUNT*CODE_SIZE] = {0};
+  unsigned char headerSorted[BYTES_COUNT] = {0}; int headerSortedIndex = 0;
   char outputFileName[1000] = "../testDataOutput/";
   int ansIndex = 0;
-  unsigned long fileNameLength = 0;
+  unsigned long fileNameLength;
   char decodeFileName[1000] = {0};
   int decodeFileSizeBytes = 0;
   int codes[BYTES_COUNT][CODE_SIZE] = {0};
@@ -308,22 +337,30 @@ void decode(char* fileNameOutput) {
   fclose(output);
 //  read header
   FILE* final = fopen(fileNameOutput, "rb");
-  fgets(header, BYTES_COUNT*CODE_SIZE, final);
+  for (int i = 0; i < BYTES_COUNT * CODE_SIZE; ++i) {
+    header[i] = (char)getc(final);
+//    printf("%c", header[i]);
+    if (header[i-1] == '\n' && header[i] == '\n') {
+      header[i-1] = '\0'; header[i] = '\0';
+      break;
+    }
+  }
   if (DEBUG_FLAG) {
-    printf("%s", header);
+    printf("%s\n", header);
   }
 //  create a table
-  for (int i = 0; header[i] != '\n'; ++i) {
+  for (int i = 1; header[i] != '\0'; ++i) {
     unsigned char byte;
-    if ((header[i] == 48 || header[i] == 49) && header[i-1] == ':') {
-      if (i - 3 >= 0 && (header[i-2] == 'n' || header[i-2] == 'r') && header[i-3] == '\\') {
-        byte = header[i-2] == 'n' ? '\n' : '\r';
-      } else {
-        byte = header[i-2];
+    if (header[i-1] == ':' && (header[i] == 48 || header[i] == 49)) {
+      byte = header[i-2];
+      headerSorted[headerSortedIndex++] = byte;
+//      printf("byte: %c\n", byte);
+//      printf("code: ");
+      for (int j = 0;(header[i] == 48 || header[i] == 49) && (header[i+1] != ':' || (header[i+1] == ':' && header[i+2] == ':')); ++i) {
+        codes[byte][j++] = header[i] - '0';
+//        printf("%d", codes[byte][j-1]);
       }
-      for (int j = 0; header[i+j] != ' '; ++j) {
-        codes[byte][j] = header[i+j] - '0';
-      }
+//      printf("\n");
     }
     length--;
   }
@@ -332,7 +369,7 @@ void decode(char* fileNameOutput) {
     for (int i = 0; i < CODE_SIZE; ++i) {
       if (codes[i][0] != -1) {
         if (!(i == 9 || i == 10 || i == 13)) {
-          printf("0x%x(%c) -> ", (unsigned char)i, i);
+          printf("0x%x(%c, %d) -> ", (unsigned char)i, i, i);
         } else {
           switch (i) {
             case 9:
@@ -363,9 +400,9 @@ void decode(char* fileNameOutput) {
   length -= fileNameLength;
   printf("file length -> %ld\n", length);
   char ans[1000+1];
-//  char ans[decodeFileSizeBytes];
   printf("start decode\n");
 //  int allCodesArr[256*2];
+//  exit(3);
   int buffCode[256+8] = {0};
   int offset = 0;
   int startIndex = 0;
@@ -401,17 +438,17 @@ void decode(char* fileNameOutput) {
   strncat(outputFileName, decodeFileName, sizeof(outputFileName) - fileNameLength - 1);
   FILE *fp = fopen(outputFileName, "wb" );
   while (a < decodeFileSizeBytes) { ////////////// start
-    if (a % onePercentOfFile == 0) {
-      printProgress((double)a/(double)decodeFileSizeBytes);
+    if (onePercentOfFile != 0 && a % onePercentOfFile == 0) {
+      printProgress(((double)a/(double)decodeFileSizeBytes)+0.01);
     }
     for (int i = 0; i < 256; ++i) {
-      if (codes[i][0] != -1) {
-        if (findAnswer(buffCode, codes[i], &offset, &lastOffset)) {
-          ans[ansIndex++] = (char)i;
+      if (codes[(int)headerSorted[i]][0] != -1) {
+        if (findAnswer(buffCode, codes[(int)headerSorted[i]], &offset, &lastOffset)) {
+          ans[ansIndex++] = (char)headerSorted[i];
           if (DEBUG_FLAG) {
             printf("symbol: %c\tcode: ", i);
-            for (int j = 0; codes[i][j] != -1; ++j) {
-              printf("%d", codes[i][j]);
+            for (int j = 0; codes[(int)headerSorted[i]][j] != -1; ++j) {
+              printf("%d", codes[(int)headerSorted[i]][j]);
             }
             printf("\n");
           }
@@ -510,7 +547,7 @@ void fillArrMinusOne(int arr[256*2]) {
   }
 }
 
-bool findAnswer(const int bitsArr[256], int symbolCodeArr[256], int* offset, int* codeLen) {
+bool findAnswer(const int bitsArr[256], const int symbolCodeArr[256], int* offset, int* codeLen) {
   *offset = 0;
   for (int i = 0; symbolCodeArr[i] != -1 && i < 256 ; ++i, ++(*offset)) {
     if (symbolCodeArr[i] != bitsArr[i]) {
