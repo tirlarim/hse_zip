@@ -2,9 +2,9 @@
 #include "tree_list/tree_list.h"
 #include "fileWorker/filePrepare.h"
 
-int main() {
+int main(int argc, char* argv[]) {
   NODE* binTree = NULL;
-  char fileNameInput[] = "../testDataInput/1mb.png",
+  char fileNameInput[] = argv[0],
        fileNameOutput[] = "../testDataOutput/answer.hse_zip";
   printf("working on: %s\n", fileNameInput);
   init_tree(binTree, fileNameInput, fileNameOutput);
