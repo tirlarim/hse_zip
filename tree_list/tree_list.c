@@ -255,9 +255,20 @@ void archive(char input_filename[], char output_filename[], long length, NODE** 
     if (freq_array[i].freq == 0)
       break;
     fprintf(final, "%c:%s", freq_array[i].symbol, freq_array[i].code);
+//    switch (freq_array[i].symbol) {
+//      case '\n':
+//        fprintf(final, "%s:%s", "\n", freq_array[i].code);
+//        break;
+//      case '\r':
+//        fprintf(final, "%s:%s", "\r", freq_array[i].code);
+//        break;
+//      default:
+//        fprintf(final, "%c:%s", freq_array[i].symbol, freq_array[i].code);
+//        break;
+//    }
   }
 
-  fprintf(final, "\n%ld", length);
+  fprintf(final, "\n\n%ld", length);
   int filename_pointer = (int) strlen(input_filename);
   filename_pointer--;
   for (; filename_pointer > 0; filename_pointer--) {
@@ -313,6 +324,7 @@ void decode(char* fileNameOutput) {
   clock_t startTime, endTime;
   startTime = clock();
   char header[BYTES_COUNT*CODE_SIZE] = {0};
+  char headerSorted[BYTES_COUNT] = {0};
   char outputFileName[1000] = "../testDataOutput/";
   int ansIndex = 0;
   unsigned long fileNameLength = 0;
@@ -333,22 +345,29 @@ void decode(char* fileNameOutput) {
   fclose(output);
 //  read header
   FILE* final = fopen(fileNameOutput, "rb");
-  fgets(header, BYTES_COUNT*CODE_SIZE, final);
+  for (int i = 0; i < BYTES_COUNT * CODE_SIZE; ++i) {
+    header[i] = (char)getc(final);
+//    printf("%c", header[i]);
+    if (header[i-1] == '\n' && header[i] == '\n') {
+      header[i-1] = '\0'; header[i] = '\0';
+      break;
+    }
+  }
   if (DEBUG_FLAG) {
-    printf("%s", header);
+    printf("%s\n", header);
   }
 //  create a table
-  for (int i = 0; header[i] != '\n'; ++i) {
+  for (int i = 1; header[i] != '\0'; ++i) {
     unsigned char byte;
-    if ((header[i] == 48 || header[i] == 49) && header[i-1] == ':') {
-      if (i - 3 >= 0 && (header[i-2] == 'n' || header[i-2] == 'r') && header[i-3] == '\\') {
-        byte = header[i-2] == 'n' ? '\n' : '\r';
-      } else {
-        byte = header[i-2];
+    if (header[i-1] == ':' && (header[i] == 48 || header[i] == 49)) {
+      byte = header[i-2];
+//      printf("byte: %c\n", byte);
+//      printf("code: ");
+      for (int j = 0;(header[i] == 48 || header[i] == 49) && (header[i+1] != ':' || (header[i+1] == ':' && header[i+2] == ':')); ++i) {
+        codes[byte][j++] = header[i] - '0';
+//        printf("%d", codes[byte][j-1]);
       }
-      for (int j = 0; header[i+j] != ' '; ++j) {
-        codes[byte][j] = header[i+j] - '0';
-      }
+//      printf("\n");
     }
     length--;
   }
@@ -388,9 +407,9 @@ void decode(char* fileNameOutput) {
   length -= fileNameLength;
   printf("file length -> %ld\n", length);
   char ans[1000+1];
-//  char ans[decodeFileSizeBytes];
   printf("start decode\n");
 //  int allCodesArr[256*2];
+//  exit(3);
   int buffCode[256+8] = {0};
   int offset = 0;
   int startIndex = 0;
@@ -426,8 +445,8 @@ void decode(char* fileNameOutput) {
   strncat(outputFileName, decodeFileName, sizeof(outputFileName) - fileNameLength - 1);
   FILE *fp = fopen(outputFileName, "wb" );
   while (a < decodeFileSizeBytes) { ////////////// start
-    if (a % onePercentOfFile == 0) {
-      printProgress((double)a/(double)decodeFileSizeBytes);
+    if (onePercentOfFile != 0 && a % onePercentOfFile == 0) {
+      printProgress(((double)a/(double)decodeFileSizeBytes)+0.01);
     }
     for (int i = 0; i < 256; ++i) {
       if (codes[i][0] != -1) {
