@@ -13,6 +13,8 @@
 #define BUFFER_SIZE 1024*1024
 #define DEBUG_FLAG false
 
+#define filename_buffer "../testDataOutput/buffer.txt"
+
 #define PBSTR "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
 #define PBWIDTH 60
 
@@ -23,6 +25,12 @@ typedef struct node {
   char code[CODE_SIZE];
   struct node *right, *left, *next;
 }NODE;
+
+typedef struct triple {
+  unsigned char symbol;
+  unsigned int freq;
+  char code[CODE_SIZE];
+}TRIPLE;
 
 void init_tree();
 

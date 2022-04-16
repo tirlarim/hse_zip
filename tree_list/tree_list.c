@@ -2,14 +2,6 @@
 #include "union.h"
 #include <time.h>
 
-#define filename_buffer "../testDataOutput/buffer.txt"
-
-typedef struct triple {
-    unsigned char symbol;
-    unsigned int freq;
-    char code[CODE_SIZE];
-}TRIPLE;
-
 int* init_array_with_zeroes(int count);
 void get_chars_frequency(char filename[], int* freq_arr, long* length);
 void add_to_list (NODE** init, unsigned int freq, unsigned char symbol, NODE* branch);
@@ -24,7 +16,7 @@ void archive(char input_filename[], char output_filename[], long length, NODE** 
 void decode(char* fileNameOutput);
 void printTreeCodes(const NODE* init);
 void prepareBytesBuffer(int buffCode[256+8], FILE* fp, int lastOffset, unsigned long* fileLen);
-bool findAnswer(const int bitsArr[256], int symbolCodeArr[], int* offset, int* codeLen);
+bool findAnswer(const int bitsArr[256], const int symbolCodeArr[], int* offset, int* codeLen);
 void fillArrMinusOne(int* arr);
 
 char code[CODE_SIZE]; //temporal array for codes
@@ -555,7 +547,7 @@ void fillArrMinusOne(int arr[256*2]) {
   }
 }
 
-bool findAnswer(const int bitsArr[256], int symbolCodeArr[256], int* offset, int* codeLen) {
+bool findAnswer(const int bitsArr[256], const int symbolCodeArr[256], int* offset, int* codeLen) {
   *offset = 0;
   for (int i = 0; symbolCodeArr[i] != -1 && i < 256 ; ++i, ++(*offset)) {
     if (symbolCodeArr[i] != bitsArr[i]) {
