@@ -16,7 +16,7 @@ void archive(char input_filename[], char output_filename[], long length, NODE** 
 void decode(char* fileNameOutput);
 void printTreeCodes(const NODE* init);
 void prepareBytesBuffer(int buffCode[256+8], FILE* fp, long long lastOffset, unsigned long* fileLen);
-bool findAnswer(const int bitsArr[256], const int symbolCodeArr[], long long* offset, long long* codeLen);
+bool findAnswer(const int bitsArr[256], const int symbolCodeArr[], long long* codeLen);
 void fillArrMinusOne(int* arr);
 
 char code[CODE_SIZE]; //temporal array for codes
@@ -402,8 +402,6 @@ void decode(char* fileNameOutput) {
   char ans[1000+1];
   printf("start decode\n");
   int buffCode[256+8] = {0};
-  long long offset = 0;
-  long long startIndex = 0;
   long long lastOffset = 0;
   int a = 0;
   unsigned int onePercentOfFile = decodeFileSizeBytes/100;
@@ -441,7 +439,7 @@ void decode(char* fileNameOutput) {
     }
     for (int i = 0; i < 256; ++i) {
       if (codes[(int)headerSorted[i]][0] != -1) {
-        if (findAnswer(buffCode, codes[(int)headerSorted[i]], &offset, &lastOffset)) {
+        if (findAnswer(buffCode, codes[(int)headerSorted[i]], &lastOffset)) {
           ans[ansIndex++] = (char)headerSorted[i];
           if (DEBUG_FLAG) {
             printf("symbol: %c\tcode: ", i);
@@ -450,7 +448,6 @@ void decode(char* fileNameOutput) {
             }
             printf("\n");
           }
-          startIndex += offset;
           if (a % 1000 == 0 || a == decodeFileSizeBytes-1) {
             fwrite(ans , 1, ansIndex, fp);
             ansIndex = 0;
@@ -491,9 +488,6 @@ void prepareBytesBuffer(int buffCode[256+8], FILE* fp, long long lastOffset, uns
   }
   for (int i = 0; i < 256 + 8 - lastOffset; ++i) {
     buffCode[i] = buffCode[i+lastOffset]; // very slow
-  }
-  if (DEBUG_FLAG) {
-    printf("offset: %d\t", lastOffset);
   }
   for (long long i = 256+8-lastOffset; i < 256+8; ++i) {
     buffCode[i] = -1;
@@ -545,9 +539,8 @@ void fillArrMinusOne(int arr[256*2]) {
   }
 }
 
-bool findAnswer(const int bitsArr[256], const int symbolCodeArr[256], long long* offset, long long* codeLen) {
-  *offset = 0;
-  for (int i = 0; symbolCodeArr[i] != -1 && i < 256 ; ++i, ++(*offset)) {
+bool findAnswer(const int bitsArr[256], const int symbolCodeArr[256], long long* codeLen) {
+  for (int i = 0; symbolCodeArr[i] != -1 && i < 256 ; ++i) {
     if (symbolCodeArr[i] != bitsArr[i]) {
       return false;
     }
