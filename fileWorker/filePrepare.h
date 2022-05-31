@@ -19,6 +19,6 @@ void printFileSize(FileInfo* fileInfo);
 void printFileAsText(FileInfo* fileInfo);
 void printSymbolsCountArr(FileInfo* fileInfo);
 void checkFileSize(char* filenameInput, char* filenameOutput);
-void checkFileHash(char* filenameInput, char* filenameOutput);
+void checkFileHash(const char* filenameInput, char* filenameOutput);
 
 #endif //HSE_ZIP_FILE_PREPARE_H
