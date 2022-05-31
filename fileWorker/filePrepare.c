@@ -134,3 +134,12 @@ void checkFileSize(char* filenameInput, char* filenameOutput) {
   printf("save %ld bytes -> %.2f%%", fileSizes[0] - fileSizes[1], 100-((float)fileSizes[1]/(float)fileSizes[0])*100) :
   printf("get %ld bytes -> %.2f%%", fileSizes[1] - fileSizes[0], ((float)fileSizes[1]/(float)fileSizes[0])*100);
 }
+
+void checkFileHash(char* filenameInput, char* filenameOutput) {
+  char cmd[200] = "shasum -a 256 ";
+  strncat(cmd, filenameInput, 100);
+  strncat(cmd, " && shasum -a 256 ", 20);
+  strncat(cmd, filenameOutput, 18);
+  strncat(cmd, &filenameInput[17], 100);
+  system(cmd);
+}
