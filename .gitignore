@@ -14,6 +14,9 @@ testDataInput/*.mp4
 testDataInput/*.mov
 testDataInput/*.webm
 
+###mkfile
+testDataInput/*.wh
+
 ### C template
 # Prerequisites
 *.d

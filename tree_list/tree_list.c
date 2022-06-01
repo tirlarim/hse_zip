@@ -223,9 +223,6 @@ void archive(char input_filename[], char output_filename[], long length, NODE** 
   fseek(get_codes, 0, SEEK_END);
   long count = ftell(get_codes);
   fseek(get_codes, 0, SEEK_SET);
-  long long len = count / 8 + 1;
-  long long tail = len * 8 - count;
-  if (count % 8 == 0) len--, tail = 0;
 
   FILE* final = fopen(output_filename, "wb");
   TRIPLE* freq_array = (TRIPLE*)malloc(256*sizeof(TRIPLE));
@@ -304,11 +301,11 @@ void archive(char input_filename[], char output_filename[], long length, NODE** 
   remove(filename_buffer);
 }
 
-void printProgress(double percentage) {
+void printProgress(double percentage, unsigned long long sec) {
   int val = (int) (percentage * 100);
   int lpad = (int) (percentage * PBWIDTH);
   int rpad = PBWIDTH - lpad;
-  printf("\r%3d%% [%.*s%*s]", val, lpad, PBSTR, rpad, "");
+  printf("\r%3d%% [%.*s%*s] est. time: ~%llu sec.", val, lpad, PBSTR, rpad, "", sec);
   fflush(stdout);
 }
 
@@ -392,13 +389,12 @@ void decode(char* fileNameOutput) {
       }
     }
   }
-  fscanf(final, "%d\n",  &decodeFileSizeBytes); //  get bits count
-  printf("file size -> %d\n", decodeFileSizeBytes);
+  fscanf(final, "%lld\n",  &decodeFileSizeBytes); //  get bits count
+  printf("file size -> %lld\n", decodeFileSizeBytes);
   fscanf(final, "%s\n",  decodeFileName); //  get bits count
   printf("file name -> %s\n", decodeFileName);
   fileNameLength = strlen(decodeFileName);
   length -= fileNameLength;
-  printf("file length -> %ld\n", length);
   char ans[1000+1];
   printf("start decode\n");
   int buffCode[256+8] = {0};
@@ -433,9 +429,14 @@ void decode(char* fileNameOutput) {
   }
   strncat(outputFileName, decodeFileName, sizeof(outputFileName) - fileNameLength - 1);
   FILE *fp = fopen(outputFileName, "wb" );
+  clock_t loopStart, loopEnd;
+  loopStart = clock();
   while (a < decodeFileSizeBytes) { ////////////// start
-    if (onePercentOfFile != 0 && a % onePercentOfFile == 0) {
-      printProgress(((double)a/(double)decodeFileSizeBytes)+0.01);
+    if (a % onePercentOfFile == 0 && onePercentOfFile != 0) {
+      loopEnd = clock();
+      double progress = ((double)a/(double)decodeFileSizeBytes)+0.01;
+      printProgress(progress,(unsigned long long)(((double)(loopEnd - loopStart) / (CLOCKS_PER_SEC))*(((double)1-progress)*100)));
+      loopStart = clock();
     }
     for (int i = 0; i < 256; ++i) {
       if (codes[(int)headerSorted[i]][0] != -1) {
@@ -547,7 +548,7 @@ bool findAnswer(const int bitsArr[256], const int symbolCodeArr[256], long long*
     *codeLen = i+1;
   }
   if (DEBUG_FLAG) {
-    printf("codeLen: %d\t", *codeLen);
+    printf("codeLen: %lld\t", *codeLen);
   }
   return true;
 }
