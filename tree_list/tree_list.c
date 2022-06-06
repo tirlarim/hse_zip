@@ -294,7 +294,19 @@ void printProgress(double percentage, unsigned long long sec) {
   int val = (int) (percentage * 100);
   int lpad = (int) (percentage * PBWIDTH);
   int rpad = PBWIDTH - lpad;
-  printf("\r%3d%% [%.*s%*s] est. time: ~%llu sec.", val, lpad, PBSTR, rpad, "", sec);
+  sec = percentage ? sec : 0;
+  printf("\r%3d%% [%.*s%*s] est. time: ~ ", val, lpad, PBSTR, rpad, "");
+  if (sec >= 604800) {
+    printf("%llu weeks %lld days %lld hours %lld minutes %lld sec", sec/604800, sec/604800/86400, sec/604800/86400/3600, sec/604800/86400/3600/60, sec%60);
+  } else if (sec >= 86400) {
+    printf("%lld days %lld hours %lld minutes %lld sec", sec/86400, sec/86400/3600, sec/86400/3600/60, sec%60);
+  } else if (sec >= 3600) {
+    printf("%lld hours %lld minutes %lld sec", sec/3600, sec/3600/60, sec%60);
+  } else if (sec >= 60) {
+    printf("%lld minutes %lld sec", sec/60, sec%60);
+  } else if (sec < 60) {
+    printf("%lld sec", sec%60);
+  }
   fflush(stdout);
 }
 
@@ -345,9 +357,7 @@ void decode(char* fileNameOutput) {
   }
   length-=5;
   fscanf(final, "%lld\n",  &decodeFileSizeBytes); //  get bits count
-  printf("file size -> %lld\n", decodeFileSizeBytes);
   fscanf(final, "%s\n",  decodeFileName); //  get bits count
-  printf("file name -> %s\n", decodeFileName);
   fileNameLength = strlen(decodeFileName);
   length -= fileNameLength;
   char ans[1000+1];
