@@ -12,6 +12,7 @@
 #define SYMBOLS_COUNT 256
 #define BUFFER_SIZE 1024*1024
 #define DEBUG_FLAG false
+#define FORCE_DEBUG false
 
 #define filename_buffer "../testDataOutput/buffer.txt"
 
@@ -32,6 +33,6 @@ typedef struct triple {
   char code[CODE_SIZE];
 }TRIPLE;
 
-void init_tree();
+void init_tree(NODE* init, char* fileNameInput, char* fileNameOutput);
 
 #endif //TREE_LIST_TREE_LIST_H

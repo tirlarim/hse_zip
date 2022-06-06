@@ -6,7 +6,7 @@
 
 int main(int argc, char* argv[]) {
   NODE* binTree = NULL;
-  char fileNameInput[] = "../testDataInput/256mbFile.wh",
+  char fileNameInput[] = "../testDataInput/2mb.jpg",
        fileNameOutput[] = "../testDataOutput/answer.hse_zip";
   printf("working on: %s\n", fileNameInput);
   init_tree(binTree, fileNameInput, fileNameOutput);
@@ -15,3 +15,10 @@ int main(int argc, char* argv[]) {
   checkFileHash(fileNameInput, fileNameOutput);
   return 0;
 }
+
+//before
+//1mb ~ 2.8sec -> 2.56
+//2mb ~ 4.83sec -> prof. 5sec => prepare=35% ~ getc=6% | find ans => 28% {decode = 92%}
+
+//after
+//1mb -> wrong res + 5.18sec
