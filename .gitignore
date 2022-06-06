@@ -16,6 +16,7 @@ testDataInput/*.webm
 
 ###mkfile
 testDataInput/*.wh
+testDataInput/*.whr
 
 ### C template
 # Prerequisites
