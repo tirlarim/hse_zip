@@ -12,6 +12,7 @@
 #define SYMBOLS_COUNT 256
 #define BUFFER_SIZE 1024*1024
 #define DEBUG_FLAG false
+#define FORCE_DEBUG false
 
 #define filename_buffer "../testDataOutput/buffer.txt"
 
@@ -26,12 +27,20 @@ typedef struct node {
   struct node *right, *left, *next;
 }NODE;
 
+typedef struct codesAsTree {
+  char symbol;
+  bool is_symbol; //always true on last element
+  int bit; // 2 on root
+  struct codesAsTree *right;
+  struct codesAsTree *left;
+}CODES_AS_TREE;
+
 typedef struct triple {
   unsigned char symbol;
   unsigned int freq;
   char code[CODE_SIZE];
 }TRIPLE;
 
-void init_tree();
+void init_tree(NODE* init, char* fileNameInput, char* fileNameOutput);
 
 #endif //TREE_LIST_TREE_LIST_H
