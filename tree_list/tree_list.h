@@ -27,6 +27,14 @@ typedef struct node {
   struct node *right, *left, *next;
 }NODE;
 
+typedef struct codesAsTree {
+  char symbol;
+  bool is_symbol; //always true on last element
+  int bit; // 2 on root
+  struct codesAsTree *right;
+  struct codesAsTree *left;
+}CODES_AS_TREE;
+
 typedef struct triple {
   unsigned char symbol;
   unsigned int freq;

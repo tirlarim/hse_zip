@@ -16,8 +16,9 @@ void archive(char input_filename[], char output_filename[], long length, NODE** 
 void decode(char* fileNameOutput);
 void printTreeCodes(const NODE* init);
 void prepareBytesBuffer(int* buffCode, FILE* fp, int* iRead, int arrSize, unsigned long* fileLen);
-bool findAnswer(const int* bitsArr, const int symbolCodeArr[], long long* codeLen, int readIndex);
+char findAnswer(CODES_AS_TREE* root, const int* arrayLen, long long* offset, int readIndex);
 void fillArrMinusOne(int* arr);
+CODES_AS_TREE* Add2Tree(CODES_AS_TREE* root, int arrayLen, int deepIndex, int* arr, char value);
 
 char code[CODE_SIZE]; //temporal array for codes
 
@@ -200,7 +201,6 @@ void change_symbols_to_codes(char input_filename[], char output_filename[], long
   for (long long i = 0; i < 256; i++) {
     find_and_copy_code(init, codes_array, i);
   }
-
   FILE* input = fopen(input_filename, "rb");
   FILE* output = fopen(output_filename, "w+");
   unsigned char buffer[BUFFER_SIZE];
@@ -355,6 +355,35 @@ void decode(char* fileNameOutput) {
     }
     length--;
   }
+//  print table:
+//  printf("\n");
+//  for (int i = 0; i < 256; ++i) {
+//    if (codes[(int)headerSorted[i]][0] != -1) {
+//      printf("'%c' -> ", (char)headerSorted[i]);
+//      for (int j = 0; j < 256 && codes[(int)headerSorted[i]][j] != -1; ++j) {
+//        printf("%d", codes[(int)headerSorted[i]][j]);
+//      }
+//      printf("\n");
+//    }
+//  }
+//  printf("\n");
+//  create tree
+  CODES_AS_TREE* root = NULL;
+  root = (CODES_AS_TREE*)malloc(sizeof(CODES_AS_TREE));
+  root->bit = 2;
+  int arrLen[256];
+  memset(arrLen, 0, sizeof(arrLen));
+  for (int i = 0; i < 256; ++i) {
+    for (int j = 0; codes[(int)headerSorted[i]][j] != -1 && j < 256; ++j) {
+      arrLen[i] = j+1;
+    }
+  }
+  for (int i = 0; i < 256; ++i) {
+    int arrCurrentLen = 0;
+    if (codes[(int)headerSorted[i]][0] != -1) {
+      root = Add2Tree(root, arrLen[i], arrCurrentLen, codes[(int)headerSorted[i]], (char)headerSorted[i]);
+    }
+  }
   length-=5;
   fscanf(final, "%lld\n",  &decodeFileSizeBytes); //  get bits count
   fscanf(final, "%s\n",  decodeFileName); //  get bits count
@@ -394,19 +423,13 @@ void decode(char* fileNameOutput) {
       printProgress(progress,(unsigned long long)(((double)(loopEnd - loopStart) / (CLOCKS_PER_SEC))*(((double)1-progress)*100)));
       loopStart = clock();
     }
-    for (int i = 0; i < 256; ++i) {
-      if (codes[(int)headerSorted[i]][0] != -1) {
-        if (findAnswer(buffCode, codes[(int)headerSorted[i]], &lastOffset, readIndex)) {
-          readIndex+=(int)lastOffset;
-          ans[ansIndex++] = (char)headerSorted[i];
-          if (a % 1000 == 0 || a == decodeFileSizeBytes-1) {
-            fwrite(ans , 1, ansIndex, fp);
-            ansIndex = 0;
-            memset(ans, 0, sizeof(ans));
-          }
-          break;
-        }
-      }
+    lastOffset = 0;
+    ans[ansIndex++] = findAnswer(root, buffCode, &lastOffset, readIndex);
+    readIndex+=(int)lastOffset;
+    if (a % 1000 == 0 || a == decodeFileSizeBytes-1) {
+      fwrite(ans , 1, ansIndex, fp);
+      ansIndex = 0;
+      memset(ans, 0, sizeof(ans));
     }
     if (readIndex>(arrSize-256) && fileCurrentLen) {
       prepareBytesBuffer(buffCode, final, &readIndex, arrSize, &fileCurrentLen);
@@ -454,12 +477,37 @@ void fillArrMinusOne(int arr[256*2]) {
   }
 }
 
-bool findAnswer(const int* bitsArr, const int symbolCodeArr[256], long long* codeLen, int readIndex) {
-  for (int i = 0; symbolCodeArr[i] != -1 && i < 256 ; ++i) {
-    if (symbolCodeArr[i] != bitsArr[readIndex+i]) {
-      return false;
+char findAnswer(CODES_AS_TREE* root, const int* arrayLen, long long* offset, int readIndex) {
+  if (root->is_symbol==true) {
+    return root->symbol;
+  } else {
+    if (arrayLen[*offset+readIndex] == 1) {
+      ++(*offset);
+      return findAnswer(root->right, arrayLen, offset, readIndex);
+    } else {
+      ++(*offset);
+      return findAnswer(root->left, arrayLen, offset, readIndex);
     }
-    *codeLen = i+1;
   }
-  return true;
+}
+
+
+CODES_AS_TREE* Add2Tree(CODES_AS_TREE* root, int arrayLen, int deepIndex, int* arr, char value) {
+  if (root == NULL) {
+    root = (CODES_AS_TREE*)malloc(sizeof(CODES_AS_TREE));
+  }
+  root->bit = !deepIndex ? 2 : arr[deepIndex-1];
+  if (deepIndex == arrayLen) {
+    root->symbol = value;
+    root->is_symbol = true;
+  }
+  if (deepIndex != arrayLen && arr[deepIndex] == 0) {
+    root->left = Add2Tree(root->left, arrayLen, ++deepIndex, arr, value);
+    return root;
+  }
+  if (deepIndex != arrayLen && arr[deepIndex] == 1) {
+    root->right = Add2Tree(root->right, arrayLen, ++deepIndex, arr, value);
+    return root;
+  }
+  return root;
 }
