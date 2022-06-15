@@ -356,6 +356,8 @@ void decode(char* fileNameOutput) {
   }
   CODES_AS_TREE* root = NULL;
   root = (CODES_AS_TREE*)malloc(sizeof(CODES_AS_TREE));
+  root->right=NULL;
+  root->left=NULL;
   int arrLen[256];
   memset(arrLen, 0, sizeof(arrLen));
   for (int i = 0; i < 256; ++i) {
@@ -366,6 +368,10 @@ void decode(char* fileNameOutput) {
   for (int i = 0; i < 256; ++i) {
     int arrCurrentLen = 0;
     if (codes[(int)headerSorted[i]][0] != -1) {
+//      for (int j = 0; j < 256; ++j) {
+//        printf("%d", codes[(int)headerSorted[i]][j]);
+//      }
+//      printf("\n");
       root = Add2Tree(root, arrLen[i], arrCurrentLen, codes[(int)headerSorted[i]], (char)headerSorted[i]);
     }
   }
