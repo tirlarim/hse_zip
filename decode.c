@@ -15,9 +15,8 @@ void fillArrMinusOne(int* arr);
 CODES_AS_TREE* Add2Tree(CODES_AS_TREE* root, int arrayLen, int deepIndex, int* arr, char value);
 
 int main(int argc, char* argv[]) {
-  NODE* binTree = NULL;
-  char fileNameInput[] = "../testDataInput/10GbFile.whr",
-          fileNameOutput[] = "../testDataOutput/10Gb.hse_zip";
+  char fileNameInput[] = "../testDataInput/11mb.png",
+          fileNameOutput[] = "../testDataOutput/answer.hse_zip";
   decode(fileNameOutput);
   printf(ANSI_COLOR_YELLOW"check sha 256 sum:"ANSI_COLOR_RESET" ");
   checkFileHash(fileNameInput, fileNameOutput);
