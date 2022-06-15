@@ -357,7 +357,6 @@ void decode(char* fileNameOutput) {
   }
   CODES_AS_TREE* root = NULL;
   root = (CODES_AS_TREE*)malloc(sizeof(CODES_AS_TREE));
-  root->bit = 2;
   int arrLen[256];
   memset(arrLen, 0, sizeof(arrLen));
   for (int i = 0; i < 256; ++i) {
@@ -483,7 +482,6 @@ CODES_AS_TREE* Add2Tree(CODES_AS_TREE* root, int arrayLen, int deepIndex, int* a
   if (root == NULL) {
     root = (CODES_AS_TREE*)malloc(sizeof(CODES_AS_TREE));
   }
-  root->bit = !deepIndex ? 2 : arr[deepIndex-1];
   if (deepIndex == arrayLen) {
     root->symbol = value;
     root->is_symbol = true;

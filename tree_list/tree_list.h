@@ -30,7 +30,6 @@ typedef struct node {
 typedef struct codesAsTree {
   char symbol;
   bool is_symbol; //always true on last element
-  int bit; // 2 on root
   struct codesAsTree *right;
   struct codesAsTree *left;
 }CODES_AS_TREE;
