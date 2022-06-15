@@ -15,23 +15,21 @@ void fillArrMinusOne(int* arr);
 CODES_AS_TREE* Add2Tree(CODES_AS_TREE* root, int arrayLen, int deepIndex, int* arr, char value);
 
 int main(int argc, char* argv[]) {
-  NODE* binTree = NULL;
-  char fileNameInput[] = "../testDataInput/2mb.jpg",
+  char fileNameInput[] = "../testDataInput/11mb.png",
           fileNameOutput[] = "../testDataOutput/answer.hse_zip";
-
-  printf(ANSI_COLOR_YELLOW"check sha 256 sum:"ANSI_COLOR_RESET" ");
   decode(fileNameOutput);
-  //checkFileHash(fileNameInput, fileNameOutput);
+  printf(ANSI_COLOR_YELLOW"check sha 256 sum:"ANSI_COLOR_RESET" ");
+  checkFileHash(fileNameInput, fileNameOutput);
   checkFileSize(fileNameInput, fileNameOutput);
   return 0;
 }
 
 void printProgress(double percentage, unsigned long long sec) {
   int val = (int) (percentage * 100);
-  int lpad = (int) (percentage * PBWIDTH);
-  int rpad = PBWIDTH - lpad;
+  int leftPad = (int) (percentage * PBWIDTH);
+  int rightPad = PBWIDTH - leftPad;
   sec = percentage ? sec : 0;
-  printf("\r%3d%% [%.*s%*s] est. time: ~ ", val, lpad, PBSTR, rpad, "");
+  printf("\r%3d%% [%.*s%*s] est. time: ~ ", val, leftPad, PBSTR, rightPad, "");
   if (sec >= 604800) {
     printf("%llu weeks %lld days %lld hours %lld minutes %lld sec", sec/604800, sec/604800/86400, sec/604800/86400/3600, sec/604800/86400/3600/60, sec%60);
   } else if (sec >= 86400) {
@@ -55,7 +53,7 @@ void decode(char* fileNameOutput) {
   int ansIndex = 0;
   unsigned long fileNameLength;
   char decodeFileName[1000] = {0};
-  long long decodeFileSizeBytes = 0;
+  unsigned long long decodeFileSizeBytes = 0;
   int codes[BYTES_COUNT][CODE_SIZE] = {0};
   for (int i = 0; i < CODE_SIZE; ++i) {
     for (int j = 0; j < CODE_SIZE; ++j) {
@@ -93,6 +91,8 @@ void decode(char* fileNameOutput) {
   }
   CODES_AS_TREE* root = NULL;
   root = (CODES_AS_TREE*)malloc(sizeof(CODES_AS_TREE));
+  root->right=NULL;
+  root->left=NULL;
   int arrLen[256];
   memset(arrLen, 0, sizeof(arrLen));
   for (int i = 0; i < 256; ++i) {
@@ -117,7 +117,7 @@ void decode(char* fileNameOutput) {
   int arrSize = 80000; // this isn't limit. we can create arr bigger
   int buffCode[8*10000] = {0}; //arrSize = buffCode.length
   long long lastOffset = 0;
-  int a = 0;
+  unsigned long long decodeBits = 0;
   unsigned int onePercentOfFile = decodeFileSizeBytes/100;
   unsigned long fileCurrentLen = length;
   BIT_TO_CHAR symbol;
@@ -138,17 +138,17 @@ void decode(char* fileNameOutput) {
   FILE *fp = fopen(outputFileName, "wb" );
   clock_t loopStart, loopEnd;
   loopStart = clock();
-  while (a < decodeFileSizeBytes) { ////////////// start
-    if (a % onePercentOfFile == 0 && onePercentOfFile != 0) {
+  while (decodeBits < decodeFileSizeBytes) { ////////////// start
+    if (decodeBits % onePercentOfFile == 0 && onePercentOfFile != 0) {
       loopEnd = clock();
-      double progress = ((double)a/(double)decodeFileSizeBytes)+0.01;
+      double progress = ((double)decodeBits / (double)decodeFileSizeBytes) + 0.01;
       printProgress(progress,(unsigned long long)(((double)(loopEnd - loopStart) / (CLOCKS_PER_SEC))*(((double)1-progress)*100)));
       loopStart = clock();
     }
     lastOffset = 0;
     ans[ansIndex++] = findAnswer(root, buffCode, &lastOffset, readIndex);
     readIndex+=(int)lastOffset;
-    if (a % 1000 == 0 || a == decodeFileSizeBytes-1) {
+    if (decodeBits % 1000 == 0 || decodeBits == decodeFileSizeBytes - 1) {
       fwrite(ans , 1, ansIndex, fp);
       ansIndex = 0;
       memset(ans, 0, sizeof(ans));
@@ -156,7 +156,7 @@ void decode(char* fileNameOutput) {
     if (readIndex>(arrSize-256) && fileCurrentLen) {
       prepareBytesBuffer(buffCode, final, &readIndex, arrSize, &fileCurrentLen);
     }
-    a++;
+    decodeBits++;
   }
   fclose(fp);
   endTime = clock();
