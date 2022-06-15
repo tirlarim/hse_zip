@@ -355,19 +355,6 @@ void decode(char* fileNameOutput) {
     }
     length--;
   }
-//  print table:
-//  printf("\n");
-//  for (int i = 0; i < 256; ++i) {
-//    if (codes[(int)headerSorted[i]][0] != -1) {
-//      printf("'%c' -> ", (char)headerSorted[i]);
-//      for (int j = 0; j < 256 && codes[(int)headerSorted[i]][j] != -1; ++j) {
-//        printf("%d", codes[(int)headerSorted[i]][j]);
-//      }
-//      printf("\n");
-//    }
-//  }
-//  printf("\n");
-//  create tree
   CODES_AS_TREE* root = NULL;
   root = (CODES_AS_TREE*)malloc(sizeof(CODES_AS_TREE));
   root->bit = 2;
