@@ -28,10 +28,10 @@ typedef struct node {
 }NODE;
 
 typedef struct codesAsTree {
-    char symbol;
-    bool is_symbol; //always true on last element
-    struct codesAsTree *right;
-    struct codesAsTree *left;
+  char symbol;
+  bool is_symbol; //always true on last element
+  struct codesAsTree *right;
+  struct codesAsTree *left;
 }CODES_AS_TREE;
 
 typedef struct triple {
