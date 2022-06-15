@@ -20,17 +20,24 @@
 #define PBWIDTH 60
 
 typedef struct node {
-  unsigned char symbol;
-  unsigned int freq;
-  bool is_symbol;
-  char code[CODE_SIZE];
-  struct node *right, *left, *next;
+    unsigned char symbol;
+    unsigned int freq;
+    bool is_symbol;
+    char code[CODE_SIZE];
+    struct node *right, *left, *next;
 }NODE;
 
+typedef struct codesAsTree {
+    char symbol;
+    bool is_symbol; //always true on last element
+    struct codesAsTree *right;
+    struct codesAsTree *left;
+}CODES_AS_TREE;
+
 typedef struct triple {
-  unsigned char symbol;
-  unsigned int freq;
-  char code[CODE_SIZE];
+    unsigned char symbol;
+    unsigned int freq;
+    char code[CODE_SIZE];
 }TRIPLE;
 
 void init_tree(NODE* init, char* fileNameInput, char* fileNameOutput);

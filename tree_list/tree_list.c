@@ -8,7 +8,7 @@ void add_to_list (NODE** init, unsigned long long freq, unsigned char symbol, NO
 void make_list(NODE** init, long long* freq_arr);
 void make_tree(NODE** init);
 void print_tree_on_side(const NODE* init, long long level);
-void create_codes(NODE** init, long long level);
+void create_codes(NODE** init, long long level, char* temp_code);
 void symmetric(NODE* init, FILE* file, TRIPLE* arr);
 void find_and_copy_code(NODE** init, char** code_array, long long symbol);
 void change_symbols_to_codes(char input_filename[], char output_filename[], long length, NODE** init);
@@ -16,10 +16,9 @@ void archive(char input_filename[], char output_filename[], long length, NODE** 
 void decode(char* fileNameOutput);
 void printTreeCodes(const NODE* init);
 void prepareBytesBuffer(int* buffCode, FILE* fp, int* iRead, int arrSize, unsigned long* fileLen);
-bool findAnswer(const int* bitsArr, const int symbolCodeArr[], long long* codeLen, int readIndex);
+char findAnswer(CODES_AS_TREE* root, const int* arrayLen, long long* offset, int readIndex);
 void fillArrMinusOne(int* arr);
-
-char code[CODE_SIZE]; //temporal array for codes
+CODES_AS_TREE* Add2Tree(CODES_AS_TREE* root, int arrayLen, int deepIndex, int* arr, char value);
 
 void init_tree(NODE* init, char* fileNameInput, char* fileNameOutput) {
   clock_t startTime, endTime;
@@ -30,7 +29,8 @@ void init_tree(NODE* init, char* fileNameInput, char* fileNameOutput) {
   make_list(&init, freq);
   free(freq);
   make_tree(&init);
-  create_codes(&init, 0);
+  char* temp_code = (char*)malloc(CODE_SIZE*sizeof(char));
+  create_codes(&init, 0, temp_code);
   change_symbols_to_codes(fileNameInput, filename_buffer, length, &init); //write 10101.. to buffer.txt
   archive(fileNameInput, fileNameOutput, length, &init); //take codes from buffer.txt and unite them
   endTime = clock();
@@ -67,7 +67,7 @@ void symmetric(NODE* init, FILE* file, TRIPLE* arr) {
   }
 }
 
-void create_codes(NODE** init, long long level) {
+void create_codes(NODE** init, long long level, char* temp_code) {
   if (*init) {
     if ((*init)->is_symbol != 0) {
       if (!level && !((*init)->next)) {
@@ -75,13 +75,13 @@ void create_codes(NODE** init, long long level) {
         (*init)->code[1] = '\0';
         return;
       }
-      code[level] = '\0';
-      strcpy((*init)->code, code);
+      temp_code[level] = '\0';
+      strcpy((*init)->code, temp_code);
     }
-    code[level] = '0';
-    create_codes(&((*init)->left), level + 1);
-    code[level] = '1';
-    create_codes(&((*init)->right), level + 1);
+    temp_code[level] = '0';
+    create_codes(&((*init)->left), level + 1, temp_code);
+    temp_code[level] = '1';
+    create_codes(&((*init)->right), level + 1, temp_code);
   }
 }
 
@@ -200,7 +200,6 @@ void change_symbols_to_codes(char input_filename[], char output_filename[], long
   for (long long i = 0; i < 256; i++) {
     find_and_copy_code(init, codes_array, i);
   }
-
   FILE* input = fopen(input_filename, "rb");
   FILE* output = fopen(output_filename, "w+");
   unsigned char buffer[BUFFER_SIZE];
@@ -294,7 +293,19 @@ void printProgress(double percentage, unsigned long long sec) {
   int val = (int) (percentage * 100);
   int lpad = (int) (percentage * PBWIDTH);
   int rpad = PBWIDTH - lpad;
-  printf("\r%3d%% [%.*s%*s] est. time: ~%llu sec.", val, lpad, PBSTR, rpad, "", sec);
+  sec = percentage ? sec : 0;
+  printf("\r%3d%% [%.*s%*s] est. time: ~ ", val, lpad, PBSTR, rpad, "");
+  if (sec >= 604800) {
+    printf("%llu weeks %lld days %lld hours %lld minutes %lld sec", sec/604800, sec/604800/86400, sec/604800/86400/3600, sec/604800/86400/3600/60, sec%60);
+  } else if (sec >= 86400) {
+    printf("%lld days %lld hours %lld minutes %lld sec", sec/86400, sec/86400/3600, sec/86400/3600/60, sec%60);
+  } else if (sec >= 3600) {
+    printf("%lld hours %lld minutes %lld sec", sec/3600, sec/3600/60, sec%60);
+  } else if (sec >= 60) {
+    printf("%lld minutes %lld sec", sec/60, sec%60);
+  } else if (sec < 60) {
+    printf("%lld sec", sec%60);
+  }
   fflush(stdout);
 }
 
@@ -343,11 +354,24 @@ void decode(char* fileNameOutput) {
     }
     length--;
   }
+  CODES_AS_TREE* root = NULL;
+  root = (CODES_AS_TREE*)malloc(sizeof(CODES_AS_TREE));
+  int arrLen[256];
+  memset(arrLen, 0, sizeof(arrLen));
+  for (int i = 0; i < 256; ++i) {
+    for (int j = 0; codes[(int)headerSorted[i]][j] != -1 && j < 256; ++j) {
+      arrLen[i] = j+1;
+    }
+  }
+  for (int i = 0; i < 256; ++i) {
+    int arrCurrentLen = 0;
+    if (codes[(int)headerSorted[i]][0] != -1) {
+      root = Add2Tree(root, arrLen[i], arrCurrentLen, codes[(int)headerSorted[i]], (char)headerSorted[i]);
+    }
+  }
   length-=5;
   fscanf(final, "%lld\n",  &decodeFileSizeBytes); //  get bits count
-  printf("file size -> %lld\n", decodeFileSizeBytes);
   fscanf(final, "%s\n",  decodeFileName); //  get bits count
-  printf("file name -> %s\n", decodeFileName);
   fileNameLength = strlen(decodeFileName);
   length -= fileNameLength;
   char ans[1000+1];
@@ -384,19 +408,13 @@ void decode(char* fileNameOutput) {
       printProgress(progress,(unsigned long long)(((double)(loopEnd - loopStart) / (CLOCKS_PER_SEC))*(((double)1-progress)*100)));
       loopStart = clock();
     }
-    for (int i = 0; i < 256; ++i) {
-      if (codes[(int)headerSorted[i]][0] != -1) {
-        if (findAnswer(buffCode, codes[(int)headerSorted[i]], &lastOffset, readIndex)) {
-          readIndex+=(int)lastOffset;
-          ans[ansIndex++] = (char)headerSorted[i];
-          if (a % 1000 == 0 || a == decodeFileSizeBytes-1) {
-            fwrite(ans , 1, ansIndex, fp);
-            ansIndex = 0;
-            memset(ans, 0, sizeof(ans));
-          }
-          break;
-        }
-      }
+    lastOffset = 0;
+    ans[ansIndex++] = findAnswer(root, buffCode, &lastOffset, readIndex);
+    readIndex+=(int)lastOffset;
+    if (a % 1000 == 0 || a == decodeFileSizeBytes-1) {
+      fwrite(ans , 1, ansIndex, fp);
+      ansIndex = 0;
+      memset(ans, 0, sizeof(ans));
     }
     if (readIndex>(arrSize-256) && fileCurrentLen) {
       prepareBytesBuffer(buffCode, final, &readIndex, arrSize, &fileCurrentLen);
@@ -444,12 +462,36 @@ void fillArrMinusOne(int arr[256*2]) {
   }
 }
 
-bool findAnswer(const int* bitsArr, const int symbolCodeArr[256], long long* codeLen, int readIndex) {
-  for (int i = 0; symbolCodeArr[i] != -1 && i < 256 ; ++i) {
-    if (symbolCodeArr[i] != bitsArr[readIndex+i]) {
-      return false;
+char findAnswer(CODES_AS_TREE* root, const int* arrayLen, long long* offset, int readIndex) {
+  if (root->is_symbol==true) {
+    return root->symbol;
+  } else {
+    if (arrayLen[*offset+readIndex] == 1) {
+      ++(*offset);
+      return findAnswer(root->right, arrayLen, offset, readIndex);
+    } else {
+      ++(*offset);
+      return findAnswer(root->left, arrayLen, offset, readIndex);
     }
-    *codeLen = i+1;
   }
-  return true;
+}
+
+
+CODES_AS_TREE* Add2Tree(CODES_AS_TREE* root, int arrayLen, int deepIndex, int* arr, char value) {
+  if (root == NULL) {
+    root = (CODES_AS_TREE*)malloc(sizeof(CODES_AS_TREE));
+  }
+  if (deepIndex == arrayLen) {
+    root->symbol = value;
+    root->is_symbol = true;
+  }
+  if (deepIndex != arrayLen && arr[deepIndex] == 0) {
+    root->left = Add2Tree(root->left, arrayLen, ++deepIndex, arr, value);
+    return root;
+  }
+  if (deepIndex != arrayLen && arr[deepIndex] == 1) {
+    root->right = Add2Tree(root->right, arrayLen, ++deepIndex, arr, value);
+    return root;
+  }
+  return root;
 }
