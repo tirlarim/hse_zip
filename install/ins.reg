@@ -1,0 +1,13 @@
+Windows Registry Editor Version 5.00
+[HKEY_CLASSES_ROOT\*\shell\Compress]
+"MUIVerb"="Compress"
+"Position"="Top"
+
+[HKEY_CLASSES_ROOT\*\shell\Compress\command]
+""="C:\\Users\\Ilya\\CLionProjects\\hse_zip\\cmake-build-debug\\HSE_zip.exe \"%1\""
+[HKEY_CLASSES_ROOT\.hse_zip\shell\Unclench]
+"MUIVerb"="Unclench"
+"Position"="Top"
+
+[HKEY_CLASSES_ROOT\.hse_zip\shell\Unclench\command]
+""="C:\\Users\\Ilya\\CLionProjects\\hse_zip\\cmake-build-debug\\HSE_zip.exe \"%1\""
