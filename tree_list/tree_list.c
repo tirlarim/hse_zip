@@ -213,7 +213,7 @@ void change_symbols_to_codes(char input_filename[], char output_filename[], long
     find_and_copy_code(init, codes_array, i);
   }
   FILE* input = fopen(input_filename, "rb");
-  FILE* output = fopen(output_filename, "w+");
+  FILE* output = fopen(output_filename, "w");
   unsigned char buffer[BUFFER_SIZE];
   long long first_time = 1;
   while (length > 0 || first_time) {
@@ -221,7 +221,7 @@ void change_symbols_to_codes(char input_filename[], char output_filename[], long
     first_time = 0;
     unsigned long long read_bytes = fread(buffer, sizeof(unsigned char), BUFFER_SIZE, input);
     for (long long i = 0; i < read_bytes; i++) {
-      fprintf(output, "%s", codes_array[(int)buffer[i]]);
+      fwrite(codes_array[(int)buffer[i]], sizeof(char), strlen(codes_array[(int)buffer[i]]), output);
     }
   }
   free(codes_array);
@@ -406,8 +406,11 @@ void decode(char* fileNameOutput) {
   BIT_TO_CHAR symbol;
   fillArrMinusOne(buffCode);
   if (PRINTF_DEBUG) {printCurrentTime(); printf("decode -> fillArrMinusOne -> DONE.\n");}
+  unsigned char* contentBuff = malloc(arrSize/8*sizeof(unsigned char));
+  memset(contentBuff, 0, sizeof(&contentBuff));
+  fread(contentBuff, sizeof(unsigned char), arrSize/8, final);
   for (int i = 0; i < arrSize/8 && i < length; ++i) {
-    symbol.character = (unsigned char)getc(final);
+    symbol.character = contentBuff[i];
     buffCode[8*i+0] = (int)symbol.mbit.b1;
     buffCode[8*i+1] = (int)symbol.mbit.b2;
     buffCode[8*i+2] = (int)symbol.mbit.b3;
@@ -418,13 +421,14 @@ void decode(char* fileNameOutput) {
     buffCode[8*i+7] = (int)symbol.mbit.b8;
     --fileCurrentLen;
   }
+  free(contentBuff);
   if (PRINTF_DEBUG) {printCurrentTime(); printf("decode -> first 80k read -> DONE.\n");}
   strncat(outputFileName, decodeFileName, sizeof(outputFileName) - fileNameLength - 1);
   FILE *fp = fopen(outputFileName, "wb" );
   clock_t loopStart, loopEnd;
   loopStart = clock();
   while (decodeBits < decodeFileSizeBytes) { // start
-    if (decodeBits % onePercentOfFile == 0 && onePercentOfFile != 0) {
+    if (onePercentOfFile != 0 && decodeBits % onePercentOfFile == 0) {
       loopEnd = clock();
       double progress = ((double)decodeBits / (double)decodeFileSizeBytes) + 0.01;
       printProgress(progress,(unsigned long long)(((double)(loopEnd - loopStart) / (CLOCKS_PER_SEC))*(((double)1-progress)*100)));
@@ -451,6 +455,8 @@ void decode(char* fileNameOutput) {
 
 void prepareBytesBuffer(int* buffCode, FILE* fp, int* iRead, int arrSize, unsigned long* fileLen) {
   int trashCount = 0;
+  unsigned char* contentBuff = malloc(10000*sizeof(unsigned char));
+  BIT_TO_CHAR symbol;
   for (int i = arrSize-1; buffCode[i] == -1 && i > arrSize-256; --i) {
     trashCount++; // ~10-15 iterations
   }
@@ -461,9 +467,10 @@ void prepareBytesBuffer(int* buffCode, FILE* fp, int* iRead, int arrSize, unsign
   for (int i = arrSize-1; i > arrSize-30; --i) {
     buffCode[i] = -1; //~30 iterations
   }
-  BIT_TO_CHAR symbol;
-  for (int i = 0; i < (arrSize - *iRead)/8; ++i) {
-    symbol.character = (unsigned char)getc(fp); // fix it
+  memset(contentBuff, 0, sizeof(&contentBuff));
+  fread(contentBuff, sizeof(unsigned  char), (arrSize - *iRead)/8, fp);
+  for (int i = 0; i < (arrSize - *iRead)/8; ++i) { //~10k
+    symbol.character = contentBuff[i];
     buffCode[*iRead+8*i+0] = (int)symbol.mbit.b1;
     buffCode[*iRead+8*i+1] = (int)symbol.mbit.b2;
     buffCode[*iRead+8*i+2] = (int)symbol.mbit.b3;
@@ -474,6 +481,7 @@ void prepareBytesBuffer(int* buffCode, FILE* fp, int* iRead, int arrSize, unsign
     buffCode[*iRead+8*i+7] = (int)symbol.mbit.b8;
     --*fileLen;
   }
+  free(contentBuff);
   *iRead=0;
 }
 
@@ -485,9 +493,7 @@ void fillArrMinusOne(int arr[256*2]) {
 }
 
 char findAnswer(CODES_AS_TREE* root, const int* arrayLen, long long* offset, int readIndex) {
-  if (root->is_symbol==true) {
-    return root->symbol;
-  } else {
+  if (root->is_symbol==false) {
     if (arrayLen[*offset+readIndex] == 1) {
       ++(*offset);
       return findAnswer(root->right, arrayLen, offset, readIndex);
@@ -495,6 +501,8 @@ char findAnswer(CODES_AS_TREE* root, const int* arrayLen, long long* offset, int
       ++(*offset);
       return findAnswer(root->left, arrayLen, offset, readIndex);
     }
+  } else {
+    return root->symbol;
   }
 }
 

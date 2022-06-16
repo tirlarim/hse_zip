@@ -7,7 +7,7 @@
 int main(int argc, char* argv[]) {
   NODE* binTree = NULL;
   char fileNameInput[] = "../testDataInput/11mb.png",
-       fileNameOutput[] = "../testDataOutput/20Gb.hse_zip";
+       fileNameOutput[] = "../testDataOutput/answer.hse_zip";
   printf("working on: %s\n", fileNameInput);
   init_tree(binTree, fileNameInput, fileNameOutput);
   if (__APPLE__) {
