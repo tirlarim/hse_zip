@@ -13,7 +13,7 @@
 #define BUFFER_SIZE 1024*1024
 #define DEBUG_FLAG false
 #define FORCE_DEBUG false
-#define PRINTF_DEBUG false
+#define PRINTF_DEBUG true
 
 #define filename_buffer "../testDataOutput/buffer.txt"
 

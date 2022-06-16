@@ -135,6 +135,7 @@ void get_chars_frequency(char filename[], long long* freq_arr, unsigned long lon
   fseek(input, 0, SEEK_END);
   *length = ftell(input);
   fseek(input, 0, SEEK_SET);
+  if (PRINTF_DEBUG) printf("get file size: %llu - DONE.\n", *length);
   unsigned char buffer[BUFFER_SIZE];
   long long first_time = 1;
   unsigned long long count = *length;
