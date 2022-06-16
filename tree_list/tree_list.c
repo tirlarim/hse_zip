@@ -3,7 +3,7 @@
 #include <time.h>
 
 long long* init_array_with_zeroes(long long count);
-void get_chars_frequency(char filename[], long long* freq_arr, unsigned long long* length);
+void get_chars_frequency(char filename[], long long* freq_arr, long long* length);
 void add_to_list (NODE** init, unsigned long long freq, unsigned char symbol, NODE* branch);
 void make_list(NODE** init, long long* freq_arr);
 void make_tree(NODE** init);
@@ -24,22 +24,22 @@ void init_tree(NODE* init, char* fileNameInput, char* fileNameOutput) {
   clock_t startTime, endTime;
   startTime = clock();
   long long* freq = init_array_with_zeroes(SYMBOLS_COUNT); //symbols frequency
-  if (PRINTF_DEBUG) printf("init_array_with_zeroes - DONE.\n");
-  unsigned long long length = 0; //symbols count
+  if (PRINTF_DEBUG) printf("archive -> init_array_with_zeroes - DONE.\n");
+  long long length = 0; //symbols count
   get_chars_frequency(fileNameInput,freq, &length);
-  if (PRINTF_DEBUG) printf("get_chars_frequency - DONE.\n");
+  if (PRINTF_DEBUG) printf("archive -> get_chars_frequency - DONE.\n");
   make_list(&init, freq);
-  if (PRINTF_DEBUG) printf("make_list - DONE.\n");
+  if (PRINTF_DEBUG) printf("archive -> make_list - DONE.\n");
   free(freq);
-  if (PRINTF_DEBUG) printf("free - DONE.\n");
+  if (PRINTF_DEBUG) printf("archive -> free - DONE.\n");
   make_tree(&init);
-  if (PRINTF_DEBUG) printf("make_tree - DONE.\n");
+  if (PRINTF_DEBUG) printf("archive -> make_tree - DONE.\n");
   char* temp_code = (char*)malloc(CODE_SIZE*sizeof(char));
-  if (PRINTF_DEBUG) printf("temp_code_init - DONE.\n");
+  if (PRINTF_DEBUG) printf("archive -> temp_code_init - DONE.\n");
   create_codes(&init, 0, temp_code);
-  if (PRINTF_DEBUG) printf("create_codes - DONE.\n");
+  if (PRINTF_DEBUG) printf("archive -> create_codes - DONE.\n");
   change_symbols_to_codes(fileNameInput, filename_buffer, length, &init); //write 10101.. to buffer.txt
-  if (PRINTF_DEBUG) printf("change_symbols_to_codes - DONE.\n");
+  if (PRINTF_DEBUG) printf("archive -> change_symbols_to_codes - DONE.\n");
   archive(fileNameInput, fileNameOutput, length, &init); //take codes from buffer.txt and unite them
   if (PRINTF_DEBUG) printf("archive - DONE.\n");
   endTime = clock();
@@ -129,16 +129,16 @@ long long* init_array_with_zeroes(long long count) {
   return arr;
 }
 
-void get_chars_frequency(char filename[], long long* freq_arr, unsigned long long* length) {
+void get_chars_frequency(char filename[], long long* freq_arr, long long* length) {
   FILE* input = fopen(filename, "rb");
   if (!input) exit(2);
   fseek(input, 0, SEEK_END);
   *length = ftell(input);
   fseek(input, 0, SEEK_SET);
-  if (PRINTF_DEBUG) printf("get file size: %llu - DONE.\n", *length);
+  if (PRINTF_DEBUG) printf("archive -> get file size: %llu - DONE.\n", *length);
   unsigned char buffer[BUFFER_SIZE];
   long long first_time = 1;
-  unsigned long long count = *length;
+  long long count = *length;
   unsigned long long bytes_read = 0;
   while (first_time || count > 0) {
     first_time = 0;
