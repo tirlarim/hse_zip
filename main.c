@@ -7,11 +7,13 @@
 int main(int argc, char* argv[]) {
   NODE* binTree = NULL;
   char fileNameInput[] = "../testDataInput/11mb.png",
-       fileNameOutput[] = "../testDataOutput/answer.hse_zip";
+       fileNameOutput[] = "../testDataOutput/20Gb.hse_zip";
   printf("working on: %s\n", fileNameInput);
   init_tree(binTree, fileNameInput, fileNameOutput);
-  checkFileSize(fileNameInput, fileNameOutput);
-  printf(ANSI_COLOR_YELLOW"check sha 256 sum:"ANSI_COLOR_RESET" ");
-  checkFileHash(fileNameInput, fileNameOutput);
+  if (__APPLE__) {
+    checkFileSize(fileNameInput, fileNameOutput);
+    printf(ANSI_COLOR_YELLOW"check sha 256 sum:"ANSI_COLOR_RESET" ");
+    checkFileHash(fileNameInput, fileNameOutput);
+  }
   return 0;
 }
