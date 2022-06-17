@@ -5,9 +5,10 @@
 #include "utils/printColors.h"
 
 int main(int argc, char* argv[]) {
+  if (argc < 3) {printf("wrong paths\n");exit(1);}
   NODE* binTree = NULL;
-  char fileNameInput[] = "../testDataInput/11mb.png",
-       fileNameOutput[] = "../testDataOutput/answer.hse_zip";
+  char fileNameInput[100], fileNameOutput[100];
+  strcpy(fileNameInput, argv[1]); strcpy(fileNameOutput, argv[2]);
   printf("working on: %s\n", fileNameInput);
   init_tree(binTree, fileNameInput, fileNameOutput);
   if (__APPLE__) {
