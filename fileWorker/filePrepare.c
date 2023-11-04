@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include "filePrepare.h"
 #include "../utils/printColors.h"
-#include <stdbool.h>
+#include "../utils/utils.h"
 
 void checkFileSize(char* filenameInput, char* filenameOutput) {
   long fileSizes[2] = {0};
@@ -28,18 +29,17 @@ void checkFileSize(char* filenameInput, char* filenameOutput) {
 }
 
 void checkFileHash(const char* filenameInput, char* filenameOutput) {
-  char cmd1[200] = "shasum -a 256 ", cmd2[100] = "shasum -a 256 ", outputFileName[100] = {0};
+  char cmd1[FILENAME_PATH_LEN] = "shasum -a 256 ", cmd2[FILENAME_PATH_LEN] = "shasum -a 256 ", uncompressedFilePath[FILENAME_PATH_LEN] = {0};
   bool filesSame = true;
-  strncat(outputFileName, filenameOutput, 18);
-  strncat(outputFileName, &filenameInput[17], 100);
-  strncat(cmd1, filenameInput, 100);
-  strncat(cmd2, outputFileName, 100);
-
+  memset(uncompressedFilePath, '\0', sizeof uncompressedFilePath);
+  int pathLen = getFilePath(FILENAME_PATH_LEN, uncompressedFilePath, filenameOutput);
+  getFilename(FILENAME_PATH_LEN-pathLen, &uncompressedFilePath[pathLen], filenameInput);
+  strncat(cmd1, filenameInput, FILENAME_PATH_LEN);
+  strncat(cmd2, uncompressedFilePath, FILENAME_PATH_LEN);
   FILE* fileOriginal = popen(cmd1, "r");
   FILE* fileUnzip = popen(cmd2, "r");
   char buffer1[65], buffer2[65];
   if (fscanf(fileOriginal, "%64s", buffer1)==1 && fscanf(fileUnzip, "%64s", buffer2)==1) {
-//    buffer2[3] = 'f';
     printf(ANSI_COLOR_GREEN);
     for (int i = 0; i < 65; ++i) {
       if (buffer1[i] != buffer2[i]) {
@@ -50,7 +50,7 @@ void checkFileHash(const char* filenameInput, char* filenameOutput) {
     }
     filesSame ? printf("Good\n") : printf("Archive / Decode error\n");
     printf("%.64s -> %s\n", buffer1, filenameInput);
-    printf("%.64s -> %s\n", buffer2, outputFileName);
+    printf("%.64s -> %s\n", buffer2, uncompressedFilePath);
   } else {
     printf("Error: can't get checksum :(\n");
   }

@@ -2,18 +2,19 @@
 #include "union.h"
 #include <time.h>
 #include "../utils/time.h"
+#include "../utils/utils.h"
 
-long long* init_array_with_zeroes(long long count);
-void get_chars_frequency(char filename[], long long* freq_arr, long long* length);
+unsigned long long* init_array_with_zeroes(unsigned short count);
+void get_chars_frequency(char filename[], unsigned long long* freq_arr, unsigned long long* length);
 void add_to_list (NODE** init, unsigned long long freq, unsigned char symbol, NODE* branch);
-void make_list(NODE** init, long long* freq_arr);
+void make_list(NODE** init, unsigned long long* freq_arr);
 void make_tree(NODE** init);
 void print_tree_on_side(const NODE* init, long long level);
 void create_codes(NODE** init, long long level, char* temp_code);
 void symmetric(NODE* init, FILE* file, TRIPLE* arr);
 void find_and_copy_code(NODE** init,unsigned  char** code_array, long long symbol);
-void archive(char input_filename[], char output_filename[], long long length, NODE** init);
-void decode(char* fileNameOutput);
+void archive(char input_filename[], char output_filename[], unsigned long long length, NODE** init);
+void decode(char* archiveFilename);
 void printTreeCodes(const NODE* init);
 void printProgress(double percentage, long long sec);
 void prepareBytesBuffer(int* buffCode, FILE* fp, int* iRead, int arrSize, unsigned long* fileLen);
@@ -24,9 +25,9 @@ CODES_AS_TREE* Add2Tree(CODES_AS_TREE* root, int arrayLen, int deepIndex, int* a
 void init_tree(NODE* init, char* fileNameInput, char* fileNameOutput) {
   clock_t startTime, endTime;
   startTime = clock();
-  long long* freq = init_array_with_zeroes(SYMBOLS_COUNT); //symbols frequency
+  unsigned long long* freq = init_array_with_zeroes(SYMBOLS_COUNT); //symbols frequency TODO fix memory leak
   if (PRINTF_DEBUG) {printCurrentTime(); printf("archive -> init_array_with_zeroes - DONE.\n");}
-  long long length = 0; //symbols count
+  unsigned long long length = 0; //symbols count
   get_chars_frequency(fileNameInput,freq, &length);
   if (PRINTF_DEBUG) {printCurrentTime(); printf("archive -> get_chars_frequency - DONE.\n");}
   make_list(&init, freq);
@@ -120,32 +121,28 @@ void printTreeCodes(const NODE* init) {
   }
 }
 
-long long* init_array_with_zeroes(long long count) {
+unsigned long long* init_array_with_zeroes(unsigned short count) {
   printf("start create tree\n");
-  long long* arr = (long long*)malloc(count*sizeof(long long));
-  for (long long i = 0; i < count; i++) {
+  unsigned long long* arr = (unsigned long long*)malloc(count*sizeof(unsigned long long));
+  for (unsigned short i = 0; i < count; i++) {
     arr[i] = 0;
   }
   return arr;
 }
 
-void get_chars_frequency(char filename[], long long* freq_arr, long long* length) {
+void get_chars_frequency(char filename[], unsigned long long* freq_arr, unsigned long long* length) {
   FILE* input = fopen(filename, "rb");
   if (!input) exit(2);
   fseek(input, 0, SEEK_END);
   *length = ftell(input);
   fseek(input, 0, SEEK_SET);
   if (PRINTF_DEBUG) {printCurrentTime(); printf("archive -> get file size: %llu - DONE.\n", *length);}
-  unsigned char* buffer = (unsigned char*)malloc(BUFFER_SIZE* sizeof(unsigned char));
-  long long first_time = 1;
-  long long count = *length;
+  unsigned char* buffer = (unsigned char*)malloc(BUFFER_SIZE* sizeof(unsigned char)); //FIXME fill 0 on windows
   unsigned long long bytes_read = 0;
-  while (first_time || count > 0) {
-    first_time = 0;
-    count -= BUFFER_SIZE;
+  for (int i = 0; i < *length / BUFFER_SIZE; ++i) {
     bytes_read = fread(buffer, sizeof(unsigned char), BUFFER_SIZE, input);
-    for (long long i = 0; i < bytes_read; i++) {
-      freq_arr[(int) buffer[i]]++;
+    for (long long j = 0; j < bytes_read; ++j) {
+      ++freq_arr[(unsigned int)buffer[j]];
     }
   }
   fclose(input);
@@ -173,8 +170,8 @@ void add_to_list(NODE** init, unsigned long long freq, unsigned char symbol, NOD
   *init = pnew;
 }
 
-void make_list(NODE** init, long long* freq_arr) {
-  for (long long i = 0; i < SYMBOLS_COUNT; i++) {
+void make_list(NODE** init, unsigned long long* freq_arr) {
+  for (unsigned short i = 0; i < SYMBOLS_COUNT; i++) {
     if (freq_arr[i]) {
       add_to_list(&(*init), freq_arr[i], i, NULL);
     }
@@ -204,7 +201,7 @@ void make_tree(NODE** init) {
   }
 }
 
-void archive(char input_filename[], char output_filename[], long long length, NODE** init) {
+void archive(char input_filename[], char output_filename[], unsigned long long length, NODE** init) {
   printf("start archive\n");
   unsigned char** codes_array = (unsigned char**)malloc(256*sizeof(unsigned char*));
   for (long long i = 0; i < 256; i++) {
@@ -334,15 +331,15 @@ void printProgress(double percentage, long long sec) {
   fflush(stdout);
 }
 
-void decode(char* fileNameOutput) {
+void decode(char* archiveFilename) {
   clock_t startTime, endTime;
   startTime = clock();
   char header[BYTES_COUNT*CODE_SIZE] = {0};
   unsigned char headerSorted[BYTES_COUNT] = {0}; int headerSortedIndex = 0;
-  char outputFileName[1000] = "../testDataOutput/";
+  char outputFileName[FILENAME_PATH_LEN] = {0};
   int ansIndex = 0;
   unsigned long fileNameLength;
-  char decodeFileName[1000] = {0};
+  char decodeFileName[FILENAME_PATH_LEN] = {0};
   unsigned long long decodeFileSizeBytes = 0;
   int codes[BYTES_COUNT][CODE_SIZE] = {0};
   for (int i = 0; i < CODE_SIZE; ++i) {
@@ -350,8 +347,9 @@ void decode(char* fileNameOutput) {
       codes[i][j] = -1;
     }
   }
+  getFilePath(FILENAME_PATH_LEN, outputFileName, archiveFilename);
 //  get file size
-  FILE* output = fopen(fileNameOutput, "rb");
+  FILE* output = fopen(archiveFilename, "rb");
   if (!output) exit(2);
   fseek(output, 0, SEEK_END);
   unsigned long long length = ftell(output);
@@ -359,7 +357,7 @@ void decode(char* fileNameOutput) {
   fclose(output);
   if (PRINTF_DEBUG) {printCurrentTime(); printf("decode -> get file size: %llu -> DONE.\n", length);}
 //  read header
-  FILE* final = fopen(fileNameOutput, "rb");
+  FILE* final = fopen(archiveFilename, "rb");
   for (int i = 0; i < BYTES_COUNT * CODE_SIZE; ++i) {
     header[i] = (char)getc(final);
     if (header[i-1] == '\n' && header[i] == '\n') {
@@ -436,7 +434,7 @@ void decode(char* fileNameOutput) {
   free(contentBuff);
   if (PRINTF_DEBUG) {printCurrentTime(); printf("decode -> first 80k read -> DONE.\n");}
   strncat(outputFileName, decodeFileName, sizeof(outputFileName) - fileNameLength - 1);
-  FILE *fp = fopen(outputFileName, "wb" );
+  FILE *fp = fopen(outputFileName, "wb");
   clock_t loopStart, loopEnd;
   loopStart = clock();
   while (decodeBits < decodeFileSizeBytes) { // start
@@ -451,6 +449,14 @@ void decode(char* fileNameOutput) {
     readIndex+=(int)lastOffset;
     if (decodeBits % 1000 == 0 || decodeBits == decodeFileSizeBytes - 1) {
       fwrite(ans , 1, ansIndex, fp);
+      // EXC_BAD_ACCESS (code=1, address=0x68)
+      // expression failed to parse:
+      //error: <user expression 6>:1:2: expected expression
+      // <Enter Size>
+      // ^
+      //error: <user expression 6>:1:3: use of undeclared identifier 'Enter'
+      // <Enter Size>
+      //  ^
       ansIndex = 0;
       memset(ans, 0, sizeof(ans));
     }

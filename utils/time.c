@@ -1,15 +1,18 @@
 #include "time.h"
 #include <stdio.h>
-#include <string.h>
 #include <time.h>
 
 void printCurrentTime() {
-  time_t rawTime;
-  struct tm* timeInfo;
-  char currentTime[9];
-  time(&rawTime);
-  timeInfo = localtime(&rawTime);
-  strncpy(currentTime, &asctime(timeInfo)[11], 8);
-  currentTime[8] = '\0';
-  printf("%s ", currentTime);
+  struct timespec ts;
+  struct tm t;
+  if (clock_gettime(CLOCK_REALTIME, &ts) == 0) {
+    time_t seconds = ts.tv_sec;
+    localtime_r(&seconds, &t);
+    int hours = t.tm_hour;
+    int minutes = t.tm_min;
+    long nanoseconds = ts.tv_nsec;
+    printf("%02d:%02d:%02ld.%ld ", hours, minutes, seconds % 60, nanoseconds);
+  } else {
+    perror("Unable get current time ");
+  }
 }

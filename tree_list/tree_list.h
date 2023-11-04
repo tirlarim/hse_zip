@@ -9,7 +9,7 @@
 
 #define CODE_SIZE 256
 #define BYTES_COUNT 256
-#define SYMBOLS_COUNT 256
+#define SYMBOLS_COUNT 256 // possible different symbols [0:255]
 #define BUFFER_SIZE 1024*1024
 #define ARCHIVE_BUFF_SIZE 800000
 #define DEBUG_FLAG false
