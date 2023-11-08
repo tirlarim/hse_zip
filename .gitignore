@@ -1,8 +1,8 @@
 ### Example user template
 #CMake
 /cmake-build-debug/
+/cmake-build-release/
 /build/
-.DS_Store
 /.run/
 
 ### Zip
@@ -80,3 +80,6 @@ gen
 
 ### vscode project files
 .vscode
+
+### macOS system files
+.DS_Store

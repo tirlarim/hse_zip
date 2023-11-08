@@ -1,19 +1,15 @@
 #ifdef _WIN32
 #include <windows.h>
 #elif __APPLE__
-
 #include <sys/sysctl.h>
 #include <string.h>
 #include <stdio.h>
-
 #else
 #include <unistd.h>
 #endif
-
-// path example in Windows
-//C:\Documents\Newsletters\Summer2018.pdf
-// path example in Posix {macOS, Linux}
-///Users/username/CLionProjects/HSE_zip/utils/utils.c
+#include "./time.h"
+#include "./printColors.h"
+#include "../tree_list/tree_list.h"
 
 int getFilePath(int filenameLen, char* path, char* filename) {
   strcpy(path, filename);
@@ -76,3 +72,37 @@ unsigned int getNumberOfCores() {
   return sysconf(_SC_NPROCESSORS_ONLN);
 }
 #endif
+
+void printLog(const char* message) {
+  if (PRINTF_DEBUG) {
+    if (__APPLE__) printf(ANSI_COLOR_YELLOW);
+    printCurrentTime();
+    printf("%s", message);
+    if (__APPLE__) printf(ANSI_COLOR_RESET);
+  }
+}
+
+void printProgress(double percentage, long long sec) {
+  int val = (int) (percentage * 100);
+  int leftPad = (int) (percentage * PBWIDTH);
+  int rightPad = PBWIDTH - leftPad;
+  sec = percentage ? sec : 0;
+  printf("\r%3d%% [%.*s%*s] est. time: ~ ", val, leftPad, PBSTR, rightPad, "");
+  if (sec != -1) {
+    if (val == 100) {sec = 0;}
+    if (sec >= 604800) {
+      printf("%llu weeks %lld days %lld hours %lld minutes %lld sec", sec/604800, sec/604800/86400, sec/604800/86400/3600, sec/604800/86400/3600/60, sec%60);
+    } else if (sec >= 86400) {
+      printf("%lld days %lld hours %lld minutes %lld sec", sec/86400, sec/86400/3600, sec/86400/3600/60, sec%60);
+    } else if (sec >= 3600) {
+      printf("%lld hours %lld minutes %lld sec", sec/3600, sec/3600/60, sec%60);
+    } else if (sec >= 60) {
+      printf("%lld minutes %lld sec", sec/60, sec%60);
+    } else if (sec < 60) {
+      printf("%lld sec", sec%60);
+    }
+  } else {
+    printf("? sec");
+  }
+  fflush(stdout);
+}
