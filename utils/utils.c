@@ -11,7 +11,7 @@
 #include "./printColors.h"
 #include "../tree_list/tree_list.h"
 
-int getFilePath(int filenameLen, char* path, char* filename) {
+int getFilePath(int filenameLen, char* path, const char* filename) {
   strcpy(path, filename);
 #ifdef WIN32
   char divideSymbol = '\\';

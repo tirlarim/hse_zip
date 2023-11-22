@@ -1,10 +1,11 @@
 #ifndef TREE_LIST_ENCODE_H
 #define TREE_LIST_ENCODE_H
 
+#include "./tree_list.h"
+
 #define ARCHIVE_BUFF_SIZE 800000
 #define BUFFER_SIZE (1024*1024)
 #define SYMBOLS_COUNT 256 // possible different symbols [0:255]
-
 
 typedef struct node {
   unsigned char symbol; // symbol: a

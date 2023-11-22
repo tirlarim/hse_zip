@@ -4,7 +4,7 @@
 #define FILENAME_PATH_LEN 100
 
 unsigned int getNumberOfCores();
-int getFilePath(int filenameLen, char* path, char* filename);
+int getFilePath(int filenameLen, char* path, const char* filename);
 int getFilename(int filenameLen, char* filename, const char* path);
 void printLog(const char* message);
 void printProgress(double percentage, long long sec);

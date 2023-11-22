@@ -9,6 +9,4 @@
 #define PBSTR "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
 #define PBWIDTH 60
 
-void decodeArchive(char* fileNameOutput);
-
 #endif //TREE_LIST_TREE_LIST_H
