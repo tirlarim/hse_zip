@@ -10,8 +10,8 @@
 #include "../utils/printColors.h"
 
 void decode(const char* archiveFilename);
-void prepareBytesBuffer(int* buffCode, FILE* fp, int* iRead, int arrSize, unsigned long* fileLen);
-char findAnswer(CODES_AS_TREE* root, const int* arrayLen, int* offset, int readIndex);
+void prepareByteBuffer(int* buffCode, FILE* fp, int* iRead, int arrSize, unsigned long* fileLen);
+char findAnswer(CODES_AS_TREE* root, const int* arrayLen, int* readIndex);
 CODES_AS_TREE* Add2Tree(CODES_AS_TREE* root, int arrayLen, int deepIndex, int* arr, char value);
 void freeTree(CODES_AS_TREE* root);
 
@@ -31,14 +31,14 @@ void decode(const char* archiveFilename) {
   int ansIndex = 0;
   unsigned long fileNameLength;
   char decodeFileName[FILENAME_PATH_LEN] = {0};
-  unsigned long long decodeFileSizeBytes = 0;
+  unsigned long fileSizeBits = 0;
   int codes[BYTES_COUNT][CODE_SIZE] = {0};
   char* errorPtr;
   char fileSizeString[15] = {0};
   memset(header, '\0', sizeof header);
-  memset(headerSorted, '\0', sizeof headerSortedIndex);
+  memset(headerSorted, '\0', sizeof headerSorted);
   memset(outputFileName, '\0', sizeof outputFileName);
-  memset(decodeFileName, '\0', sizeof decodeFileSizeBytes);
+  memset(decodeFileName, '\0', sizeof decodeFileName);
   memset(fileSizeString, '\0', sizeof fileSizeString);
   for (int i = 0; i < CODE_SIZE; ++i) {
     for (int j = 0; j < CODE_SIZE; ++j) {
@@ -101,12 +101,12 @@ void decode(const char* archiveFilename) {
   }
   printLog("decode -> create a bin tree -> DONE.\n");
   fscanf(final, "%s\n", fileSizeString); //  get archive file size in bits
-  decodeFileSizeBytes = strtoll(fileSizeString, &errorPtr, 16);
+  fileSizeBits = strtoll(fileSizeString, &errorPtr, 16);
   fscanf(final, "%s\n", decodeFileName); // get archive filename
   if (PRINTF_DEBUG) {
     if (__APPLE__) printf(ANSI_COLOR_YELLOW);
     printCurrentTime();
-    printf("decode -> get decodeFileSizeBytes: %lld -> DONE.\n", decodeFileSizeBytes);
+    printf("decode -> get decodeFileSizeBytes: %ld -> DONE.\n", fileSizeBits);
     printCurrentTime();
     printf("decode -> get decodeFileName: %s -> DONE.\n", decodeFileName);
     if (__APPLE__) printf(ANSI_COLOR_RESET);
@@ -114,12 +114,11 @@ void decode(const char* archiveFilename) {
   fileNameLength = strlen(decodeFileName);
   length -= fileNameLength;
   length -= 5; //?
-  char* ans = calloc(ANSWER_BUFFER_SIZE, sizeof(*ans)); // replace to ANSWER_BUFFER_SIZE+1 if you get bug
+  char* ans = calloc(ANSWER_BUFFER_SIZE, sizeof(*ans));
   int readIndex = 0;
   int* buffCode = calloc(DECODE_BUFF_SIZE, sizeof(*buffCode));
-  int lastOffset = 0;
-  unsigned long long decodeBits = 0;
-  unsigned int onePercentOfFile = decodeFileSizeBytes / 100;
+  unsigned long decodeBits = 0;
+  unsigned int onePercentOfFile = fileSizeBits / 100;
   unsigned long fileCurrentLen = length;
   unsigned char* contentBuff = calloc(DECODE_BUFF_SIZE / 8, sizeof(*contentBuff));
   fread(contentBuff, sizeof(unsigned char), DECODE_BUFF_SIZE / 8, final);
@@ -136,25 +135,20 @@ void decode(const char* archiveFilename) {
   FILE* fp = fopen(outputFileName, "wb");
   clock_t loopStart, loopEnd;
   loopStart = clock();
-  while (decodeBits < decodeFileSizeBytes) { // start
-    if (onePercentOfFile != 0 && decodeBits % onePercentOfFile == 0) {
+  while (decodeBits != fileSizeBits) { // start
+    if (!(decodeBits % onePercentOfFile) && onePercentOfFile) {
       loopEnd = clock();
-      double progress = ((double)decodeBits / (double)decodeFileSizeBytes) + 0.01;
-      printProgress(progress,
-                    (long long)(((double)(loopEnd - loopStart) /
-                                 (CLOCKS_PER_SEC)) * (((double)1 - progress) * 100)));
+      printProgress(fileSizeBits, decodeBits, loopEnd, loopStart);
       loopStart = clock();
     }
-    lastOffset = 0;
-    ans[ansIndex++] = findAnswer(root, buffCode, &lastOffset, readIndex);
-    readIndex += lastOffset;
-    if (decodeBits % ANSWER_BUFFER_SIZE == 0 || decodeBits == decodeFileSizeBytes - 1) {
+    ans[ansIndex++] = findAnswer(root, buffCode, &readIndex);
+    if (decodeBits % ANSWER_BUFFER_SIZE == 0 || decodeBits == fileSizeBits - 1) {
       fwrite(ans, 1, ansIndex, fp);
       ansIndex = 0;
       memset(ans, 0, (ANSWER_BUFFER_SIZE) * sizeof(*ans));
     }
     if (readIndex > (DECODE_BUFF_SIZE - 256) && fileCurrentLen) {
-      prepareBytesBuffer(buffCode, final, &readIndex, DECODE_BUFF_SIZE, &fileCurrentLen);
+      prepareByteBuffer(buffCode, final, &readIndex, DECODE_BUFF_SIZE, &fileCurrentLen);
     }
     decodeBits++;
   }
@@ -163,20 +157,21 @@ void decode(const char* archiveFilename) {
   freeTree(root);
   free(root);
   free(buffCode);
+  free(contentBuff);
   free(ans);
   endTime = clock();
   printf("\n");
   printf("decode time: %.2lf sec.\n", (double)(endTime - startTime) / (CLOCKS_PER_SEC));
 }
 
-void prepareBytesBuffer(int* buffCode, FILE* fp, int* iRead, int arrSize, unsigned long* fileLen) {
+void prepareByteBuffer(int* buffCode, FILE* fp, int* iRead, int arrSize, unsigned long* fileLen) {
   int trashCount = 0;
   unsigned char* contentBuff = calloc(DECODE_BUFF_SIZE / 8, sizeof(*contentBuff));
   for (int i = arrSize - 1; buffCode[i] == -1 && i > arrSize - 256; --i) {
     trashCount++; // ~10-15 iterations
   }
-  for (int i = *iRead; i < arrSize && buffCode[i] != -1; ++i) {
-    buffCode[i - *iRead] = buffCode[i]; //~256 iterations
+  for (int i = *iRead, j = 0; buffCode[i] != -1 && i < arrSize; ++i, ++j) {
+    buffCode[j] = buffCode[i]; //~256 iterations
   }
   *iRead = arrSize - *iRead - trashCount;
   for (int i = arrSize - 1; i > arrSize - 30; --i) {
@@ -193,12 +188,10 @@ void prepareBytesBuffer(int* buffCode, FILE* fp, int* iRead, int arrSize, unsign
   free(contentBuff);
 }
 
-char findAnswer(CODES_AS_TREE* root, const int* arrayLen, int* offset, int readIndex) {
+char findAnswer(CODES_AS_TREE* root, const int* arrayLen, int* readIndex) {
   CODES_AS_TREE* currentNode = root;
-  int startIndex = *offset + readIndex;
-  for (; !currentNode->is_symbol; ++startIndex)
-    currentNode = arrayLen[startIndex] ? currentNode->right : currentNode->left;
-  *offset += startIndex - (*offset + readIndex);
+  for (; !currentNode->is_symbol; ++*readIndex)
+    currentNode = arrayLen[*readIndex] ? currentNode->right : currentNode->left;
   return currentNode->symbol;
 }
 

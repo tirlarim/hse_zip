@@ -82,27 +82,30 @@ void printLog(const char* message) {
   }
 }
 
-void printProgress(double percentage, long long sec) {
-  int val = (int) (percentage * 100);
-  int leftPad = (int) (percentage * PBWIDTH);
+void printProgress(unsigned long bitsAll, unsigned long bitsDecode, clock_t end, clock_t start) {
+  double percentage = ((double)bitsDecode / (double)bitsAll) + 0.01;
+  unsigned char percentageAsInteger = (unsigned char)(percentage * 100);
+  unsigned long sec = (end - start) / CLOCKS_PER_SEC * percentageAsInteger;
+  unsigned short leftPad = (unsigned short)(percentage * PBWIDTH);
   int rightPad = PBWIDTH - leftPad;
-  sec = percentage ? sec : 0;
-  printf("\r%3d%% [%.*s%*s] est. time: ~ ", val, leftPad, PBSTR, rightPad, "");
+  sec = percentage / 100 ? sec : 0;
+  printf("\r%3d%% [%.*s%*s] est. time: ~ ", percentageAsInteger, leftPad, PBSTR, rightPad, "");
   if (sec != -1) {
-    if (val == 100) {sec = 0;}
+    if (percentage == 100) sec = 0;
     if (sec >= 604800) {
-      printf("%llu weeks %lld days %lld hours %lld minutes %lld sec", sec/604800, sec/604800/86400, sec/604800/86400/3600, sec/604800/86400/3600/60, sec%60);
+      printf("%lu weeks %lu days %lu hours %lu minutes %lu sec", sec/604800, sec/604800/86400, sec/604800/86400/3600, sec/604800/86400/3600/60, sec%60);
     } else if (sec >= 86400) {
-      printf("%lld days %lld hours %lld minutes %lld sec", sec/86400, sec/86400/3600, sec/86400/3600/60, sec%60);
+      printf("%lu days %lu hours %lu minutes %lu sec", sec/86400, sec/86400/3600, sec/86400/3600/60, sec%60);
     } else if (sec >= 3600) {
-      printf("%lld hours %lld minutes %lld sec", sec/3600, sec/3600/60, sec%60);
+      printf("%lu hours %lu minutes %lu sec", sec/3600, sec/3600/60, sec%60);
     } else if (sec >= 60) {
-      printf("%lld minutes %lld sec", sec/60, sec%60);
-    } else if (sec < 60) {
-      printf("%lld sec", sec%60);
+      printf("%lu minutes %lu sec", sec/60, sec%60);
+    } else {
+      printf("%lu sec", sec % 60);
     }
   } else {
     printf("? sec");
   }
   fflush(stdout);
 }
+
