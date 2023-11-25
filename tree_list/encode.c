@@ -13,7 +13,7 @@ void get_chars_frequency(char* filename, unsigned long long* freq_arr, unsigned 
 void make_list(NODE** init, unsigned long long* freq_arr);
 void make_tree(NODE** init);
 void archive(char* input_filename, char* output_filename, unsigned long long length, NODE* init);
-void create_codes(NODE** init, long long level, char* temp_code);
+void create_codes(NODE* init, long long level, char* temp_code);
 
 void encodeArchive(char* fileNameInput, char* fileNameOutput) {
   NODE* pBinTree = NULL;
@@ -28,7 +28,7 @@ void encodeArchive(char* fileNameInput, char* fileNameOutput) {
   printLog("archive -> make_list - DONE.\n");
   make_tree(&pBinTree);
   printLog("archive -> make_tree - DONE.\n");
-  create_codes(&pBinTree, 0, temp_code);
+  create_codes(pBinTree, 0, temp_code);
   printLog("archive -> create_codes - DONE.\n");
   archive(fileNameInput, fileNameOutput, length, pBinTree); //take codes from buffer.txt and unite them
   printLog("archive - DONE.\n");
@@ -51,7 +51,7 @@ void symmetric(NODE* init, FILE* file, TRIPLE* arr) {
 void get_chars_frequency(char filename[], unsigned long long* freq_arr, unsigned long long* length) {
   FILE* input = fopen(filename, "rb");
   if (!input) {
-    perror("get_chars_frequency >> Unable to open file");
+    perror("get_chars_frequency -> Unable to open file");
     exit(2);
   }
   fseek(input, 0, SEEK_END);
@@ -64,32 +64,31 @@ void get_chars_frequency(char filename[], unsigned long long* freq_arr, unsigned
     if (__APPLE__) printf(ANSI_COLOR_RESET);
   }
   unsigned char buffer[BUFFER_SIZE];
-  unsigned long long bytes_read = 0;
-  memset(buffer, 0, BUFFER_SIZE * sizeof(unsigned char));
+  memset(buffer, 0, BUFFER_SIZE * sizeof(*buffer));
   for (int i = 0; i < *length / BUFFER_SIZE; ++i) {
-    bytes_read = fread(buffer, sizeof(unsigned char), BUFFER_SIZE, input);
+    unsigned long long bytes_read = fread(buffer, sizeof(*buffer), BUFFER_SIZE, input);
     for (long long j = 0; j < bytes_read; ++j) {
-      ++freq_arr[(unsigned int)buffer[j]];
+      ++freq_arr[buffer[j]];
     }
   }
   fclose(input);
 }
 
-void create_codes(NODE** init, long long level, char* temp_code) {
-  if (*init) {
-    if ((*init)->is_symbol != 0) {
-      if (!level && !((*init)->next)) {
-        (*init)->code[0] = '1';
-        (*init)->code[1] = '\0';
+void create_codes(NODE* init, long long level, char* temp_code) {
+  if (init) {
+    if (init->is_symbol) {
+      if (!level && !init->next) {
+        init->code[0] = '1';
+        init->code[1] = '\0';
         return;
       }
       temp_code[level] = '\0';
-      strcpy((*init)->code, temp_code);
+      strcpy(init->code, temp_code);
     }
     temp_code[level] = '0';
-    create_codes(&((*init)->left), level + 1, temp_code);
+    create_codes(init->left, level + 1, temp_code);
     temp_code[level] = '1';
-    create_codes(&((*init)->right), level + 1, temp_code);
+    create_codes(init->right, level + 1, temp_code);
   }
 }
 
