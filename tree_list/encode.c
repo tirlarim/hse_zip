@@ -14,6 +14,7 @@ void make_list(NODE** init, unsigned long long* freq_arr);
 void make_tree(NODE** init);
 void archive(char* input_filename, char* output_filename, unsigned long long length, NODE* init);
 void create_codes(NODE* init, long long level, char* temp_code);
+void freeTree(NODE* root);
 
 void encodeArchive(char* fileNameInput, char* fileNameOutput) {
   NODE* pBinTree = NULL;
@@ -32,8 +33,10 @@ void encodeArchive(char* fileNameInput, char* fileNameOutput) {
   printLog("archive -> create_codes - DONE.\n");
   archive(fileNameInput, fileNameOutput, length, pBinTree); //take codes from buffer.txt and unite them
   printLog("archive - DONE.\n");
+  freeTree(pBinTree);
+  free(pBinTree);
   endTime = clock();
-  printf("archive time: %.2lf sec.\n", (double)(endTime - startTime) / (CLOCKS_PER_SEC));
+  printf("archive time: %.2lf sec.\n", (float)(endTime - startTime) / (CLOCKS_PER_SEC));
 }
 
 void symmetric(NODE* init, FILE* file, TRIPLE* arr) {
@@ -92,14 +95,15 @@ void create_codes(NODE* init, long long level, char* temp_code) {
   }
 }
 
-void find_and_copy_code(NODE* init, char** code_array, long long symbol) {
+void find_and_copy_code(NODE* init, char** code_array, unsigned char symbol, unsigned char* symbolLen) {
   if (init) {
-    if (init->is_symbol && init->symbol == symbol) { // rewrite as init->symbol == symbol
+    if (init->is_symbol && init->symbol == symbol) {
+      *symbolLen = strlen(init->code);
       strcpy(code_array[symbol], init->code);
       return;
     }
-    find_and_copy_code(init->left, code_array, symbol);
-    find_and_copy_code(init->right, code_array, symbol);
+    find_and_copy_code(init->left, code_array, symbol, symbolLen);
+    find_and_copy_code(init->right, code_array, symbol, symbolLen);
   }
 }
 
@@ -133,25 +137,40 @@ void printTreeCodes(const NODE* init) {
   }
 }
 
+void freeTree(NODE* root) {
+  if (root->right) {
+    freeTree(root->right);
+    free(root->right);
+  }
+  if (root->left) {
+    freeTree(root->left);
+    free(root->left);
+  }
+}
+
 void add_to_list(NODE** init, unsigned long long freq, unsigned char symbol, NODE* branch) {
+  NODE* pNode = NULL;
   while (*init) {
     if ((*init)->freq > freq) {
       break;
     }
     init = &((*init)->next);
   }
-  NODE* pnew = (NODE*)malloc(sizeof(NODE));
-  pnew->freq = freq;
-  pnew->symbol = symbol;
-  pnew->left = NULL;
-  pnew->right = NULL;
+  pNode = (NODE*)malloc(sizeof(NODE));
+  pNode->freq = freq;
+  pNode->symbol = symbol;
+  pNode->left = NULL;
+  pNode->right = NULL;
   if (branch != NULL)
-    pnew = branch;
+    pNode = branch;
   else {
-    pnew->is_symbol = true;
+    pNode->is_symbol = true;
   }
-  pnew->next = *init;
-  *init = pnew;
+//  (*init)->next = (NODE*)malloc(sizeof(NODE));
+//  (*init)->next = *init;
+//
+  pNode->next = *init;
+  *init = pNode;
 }
 
 void make_list(NODE** init, unsigned long long* freq_arr) {
@@ -187,26 +206,22 @@ void make_tree(NODE** init) {
 
 void archive(char input_filename[], char output_filename[], unsigned long long length, NODE* init) {
   printf("start archive\n");
-  char** codes_array = (char**)malloc(256 * sizeof(char*));
-  for (long long i = 0; i < 256; i++) {
-    codes_array[i] = (char*)malloc(256 * sizeof(char));
+  unsigned char codes_len[SYMBOLS_COUNT] = {0};
+  char* codes_array[SYMBOLS_COUNT] = {0}; // fixme add free
+  for (long long i = 0; i < SYMBOLS_COUNT; i++) {
+    codes_array[i] = (char*)calloc(SYMBOLS_COUNT, sizeof(*codes_array[i]));
   }
-  for (int i = 0; i < 256; ++i) {
-    for (int j = 0; j < 256; ++j) {
-      codes_array[i][j] = 0;
-    }
-  }
-  for (long long i = 0; i < 256; i++) {
-    find_and_copy_code(init, codes_array, i);
+  for (long long i = 0; i < SYMBOLS_COUNT; i++) {
+    find_and_copy_code(init, codes_array, i, &codes_len[i]);
   }
   FILE* final = fopen(output_filename, "wb");
-  TRIPLE* freq_array = (TRIPLE*)malloc(256 * sizeof(TRIPLE));
-  for (long long i = 0; i < 256; i++) {
+  TRIPLE* freq_array = (TRIPLE*)malloc(SYMBOLS_COUNT * sizeof(TRIPLE));
+  for (long long i = 0; i < SYMBOLS_COUNT; i++) {
     freq_array[i].freq = 0;
   }
   symmetric(init, final, freq_array);//get symbol, freq and code to array of TRIPLE
-  for (int i = 0; i < 256; i++) { //bubble sort
-    for (int j = i + 1; j < 256; j++) {
+  for (int i = 0; i < SYMBOLS_COUNT; i++) { //bubble sort
+    for (int j = i + 1; j < SYMBOLS_COUNT; j++) {
       if (freq_array[j].freq > freq_array[i].freq) {
         TRIPLE temp = freq_array[i];
         freq_array[i] = freq_array[j];
@@ -238,29 +253,34 @@ void archive(char input_filename[], char output_filename[], unsigned long long l
   memset(buffer, 0, sizeof(&buffer));
   memset(archive, 0, sizeof(&archive));
   bool archiveStatus = true;
-  int offset = 0;
-  long long allReadBytes = 0;
+  unsigned long long offset = 0;
+  unsigned long fileLenPercent = length/100, currentPercent = 0, cachePercent = 0, allReadBytes = 0;
+  unsigned char tmpCache;
   clock_t loopStart, loopEnd;
   loopStart = clock();
   while (archiveStatus) {
     BIT_TO_CHAR symbol;
-    long long buffMemoryCurrent = 0;
-    buffMemoryCurrent += offset;
     unsigned long read_bytes = fread(fileContent, sizeof(unsigned char), ARCHIVE_BUFF_SIZE / 256, input);
-    allReadBytes += (long long)read_bytes;
-    if (allReadBytes != length) {
+    allReadBytes+=read_bytes;
+    cachePercent = allReadBytes / fileLenPercent;
+#ifdef ENABLE_PROGRESS
+    if (cachePercent > currentPercent) {
+      currentPercent = cachePercent;
       loopEnd = clock();
       printProgress(length, allReadBytes, loopEnd, loopStart);
       loopStart = clock();
     }
-    if (read_bytes == 0) { archiveStatus = false; }
-    for (int i = 0; i < read_bytes && buffMemoryCurrent + CODE_SIZE < ARCHIVE_BUFF_SIZE; ++i) {
-      memcpy(&buffer[buffMemoryCurrent], codes_array[(int)fileContent[i]],
-             strlen((char*)codes_array[(int)fileContent[i]]));
-      buffMemoryCurrent += (long long)strlen((char*)codes_array[(int)fileContent[i]]);
+#endif
+    if (read_bytes == 0) {
+      archiveStatus = false;
+      break;
+    }
+    for (int i = 0; i < read_bytes && offset + CODE_SIZE < ARCHIVE_BUFF_SIZE; ++i) {
+      memcpy(&buffer[offset], codes_array[fileContent[i]], codes_len[fileContent[i]]);
+      offset += codes_len[fileContent[i]];
     }
     long long archiveLen = 0;
-    for (long long i = 0; i < (buffMemoryCurrent / 8) * 8 || (buffMemoryCurrent < 8 && archiveLen == 0);) { //use offset
+    for (long long i = 0; i < offset || (offset < 8 && archiveLen == 0);) { //use offset
       symbol.mbit.b1 = buffer[i++];
       symbol.mbit.b2 = buffer[i++];
       symbol.mbit.b3 = buffer[i++];
@@ -271,16 +291,13 @@ void archive(char input_filename[], char output_filename[], unsigned long long l
       symbol.mbit.b8 = buffer[i++];
       archive[archiveLen++] = symbol.character;
     }
-    for (long long i = buffMemoryCurrent - (buffMemoryCurrent % 8), j = 0; j < buffMemoryCurrent % 8; ++i, ++j) {
-      buffer[j] = buffer[i];
-    }
-    offset = (int)((buffMemoryCurrent) % 8);
+    tmpCache = offset % 8;
+    memcpy(buffer, buffer+(offset-tmpCache), tmpCache); //carefully with a buffer type
+    offset = tmpCache;
     fwrite(archive, sizeof(unsigned char), archiveLen, final);
-    if (length == read_bytes) {
-      archiveStatus = false;
-      break;
-    }
+    if (length == read_bytes) archiveStatus = false; // end of cycle
   }
+  for (int i = 0; i < SYMBOLS_COUNT; ++i) free(codes_array[i]);
   free(freq_array);
   free(fileContent);
   free(buffer);

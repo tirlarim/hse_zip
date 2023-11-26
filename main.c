@@ -18,7 +18,8 @@ int main(int argc, char* argv[]) {
   return 0;
 }
 
-//argv[1] = fileNameInput
-//argv[2] = fileNameOutput
 // TODO: add async encode/decode
 // TODO: add semaphores to check limits in zip app
+// FIXME: encode doesn't work with txt file
+//        i think bug happens if we cant find all 0-255 bytes in file (check it)
+//

@@ -4,6 +4,7 @@
 #include <time.h>
 
 #define FILENAME_PATH_LEN 100
+#define ENABLE_PROGRESS
 
 unsigned int getNumberOfCores();
 int getFilePath(int filenameLen, char* path, const char* filename);

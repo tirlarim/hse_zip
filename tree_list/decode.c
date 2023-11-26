@@ -10,10 +10,10 @@
 #include "../utils/printColors.h"
 
 void decode(const char* archiveFilename);
-void prepareByteBuffer(int* buffCode, FILE* fp, int* iRead, int arrSize, unsigned long* fileLen);
-char findAnswer(CODES_AS_TREE* root, const int* arrayLen, int* readIndex);
+void prepareByteBuffer(unsigned char* buffCode, FILE* fp, int* iRead, int arrSize, unsigned long* fileLen);
+char findAnswer(CODES_AS_TREE* root, const unsigned char* arrayLen, int* readIndex);
 CODES_AS_TREE* Add2Tree(CODES_AS_TREE* root, int arrayLen, int deepIndex, int* arr, char value);
-void freeTree(CODES_AS_TREE* root);
+void freeBinTree(CODES_AS_TREE* root);
 
 void decodeArchive(char* fileNameOutput) {
   decode(fileNameOutput);
@@ -116,7 +116,7 @@ void decode(const char* archiveFilename) {
   length -= 5; //?
   char* ans = calloc(ANSWER_BUFFER_SIZE, sizeof(*ans));
   int readIndex = 0;
-  int* buffCode = calloc(DECODE_BUFF_SIZE, sizeof(*buffCode));
+  unsigned char* buffCode = calloc(DECODE_BUFF_SIZE, sizeof(*buffCode));
   unsigned long decodeBits = 0;
   unsigned int onePercentOfFile = fileSizeBits / 100;
   unsigned long fileCurrentLen = length;
@@ -136,11 +136,13 @@ void decode(const char* archiveFilename) {
   clock_t loopStart, loopEnd;
   loopStart = clock();
   while (decodeBits != fileSizeBits) { // start
+#ifdef ENABLE_PROGRESS
     if (!(decodeBits % onePercentOfFile) && onePercentOfFile) {
       loopEnd = clock();
       printProgress(fileSizeBits, decodeBits, loopEnd, loopStart);
       loopStart = clock();
     }
+#endif
     ans[ansIndex++] = findAnswer(root, buffCode, &readIndex);
     if (decodeBits % ANSWER_BUFFER_SIZE == 0 || decodeBits == fileSizeBits - 1) {
       fwrite(ans, 1, ansIndex, fp);
@@ -154,7 +156,7 @@ void decode(const char* archiveFilename) {
   }
   fclose(fp);
   fclose(final);
-  freeTree(root);
+  freeBinTree(root);
   free(root);
   free(buffCode);
   free(contentBuff);
@@ -164,34 +166,33 @@ void decode(const char* archiveFilename) {
   printf("decode time: %.2lf sec.\n", (double)(endTime - startTime) / (CLOCKS_PER_SEC));
 }
 
-void prepareByteBuffer(int* buffCode, FILE* fp, int* iRead, int arrSize, unsigned long* fileLen) {
-  int trashCount = 0;
+void prepareByteBuffer(unsigned char* buffCode, FILE* fp, int* iRead, int arrSize, unsigned long* fileLen) {
   unsigned char* contentBuff = calloc(DECODE_BUFF_SIZE / 8, sizeof(*contentBuff));
-  for (int i = arrSize - 1; buffCode[i] == -1 && i > arrSize - 256; --i) {
+  unsigned char trashCount = 0;
+  unsigned char magicNumber = 31;
+  unsigned int readCount;
+  for (int i = arrSize - 1; buffCode[i] == 255 && i > arrSize - 256; --i) {
     trashCount++; // ~10-15 iterations
   }
-  for (int i = *iRead, j = 0; buffCode[i] != -1 && i < arrSize; ++i, ++j) {
-    buffCode[j] = buffCode[i]; //~256 iterations
-  }
+  memcpy(buffCode, buffCode+(*iRead), (arrSize - *iRead - trashCount)*sizeof(*buffCode));
   *iRead = arrSize - *iRead - trashCount;
-  for (int i = arrSize - 1; i > arrSize - 30; --i) {
-    buffCode[i] = -1; //~30 iterations
-  }
-  fread(contentBuff, sizeof(unsigned char), (arrSize - *iRead) / 8, fp);
-  for (int i = 0; i < (arrSize - *iRead) / 8; ++i) { //~10k
-    for (int j = 0; j < BIT8; ++j) {
+  memset(buffCode+(arrSize-magicNumber), UINT8_MAX, magicNumber*sizeof(*buffCode));
+  readCount = (arrSize - *iRead) / 8;
+  fread(contentBuff, sizeof(*contentBuff), readCount, fp);
+  for (unsigned int i = 0; i < readCount; ++i) { //~10k
+    for (unsigned char j = 0; j < BIT8; ++j) {
       buffCode[*iRead + BIT8 * i + j] = ((contentBuff[i] >> j) & 1);
     }
-    --*fileLen;
   }
+  *fileLen -= readCount;
   *iRead = 0;
   free(contentBuff);
 }
 
-char findAnswer(CODES_AS_TREE* root, const int* arrayLen, int* readIndex) {
+char findAnswer(CODES_AS_TREE* root, const unsigned char* arrayLen, int* readIndex) {
   CODES_AS_TREE* currentNode = root;
   for (; !currentNode->is_symbol; ++*readIndex)
-    currentNode = arrayLen[*readIndex] ? currentNode->right : currentNode->left;
+    currentNode = arrayLen[*readIndex] == 0 ? currentNode->left : currentNode->right;
   return currentNode->symbol;
 }
 
@@ -215,13 +216,13 @@ CODES_AS_TREE* Add2Tree(CODES_AS_TREE* root, int arrayLen, int deepIndex, int* a
   return root;
 }
 
-void freeTree(CODES_AS_TREE* root) {
+void freeBinTree(CODES_AS_TREE* root) {
   if (root->left != NULL) {
-    freeTree(root->left);
+    freeBinTree(root->left);
     free(root->left);
   }
   if (root->right != NULL) {
-    freeTree(root->right);
+    freeBinTree(root->right);
     free(root->right);
   }
 }

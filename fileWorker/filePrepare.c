@@ -54,6 +54,7 @@ void checkFileHash(const char* filenameInput, char* filenameOutput) {
   } else {
     printf("Error: can't get checksum :(\n");
   }
+  printf(ANSI_COLOR_RESET);
   pclose(fileOriginal);
   pclose(fileUnzip);
 }
