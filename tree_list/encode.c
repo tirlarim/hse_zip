@@ -156,19 +156,16 @@ void add_to_list(NODE** init, unsigned long long freq, unsigned char symbol, NOD
     }
     init = &((*init)->next);
   }
-  pNode = (NODE*)malloc(sizeof(NODE));
-  pNode->freq = freq;
-  pNode->symbol = symbol;
-  pNode->left = NULL;
-  pNode->right = NULL;
   if (branch != NULL)
     pNode = branch;
   else {
+    pNode = (NODE*)malloc(sizeof(NODE));
+    pNode->freq = freq;
+    pNode->symbol = symbol;
+    pNode->left = NULL;
+    pNode->right = NULL;
     pNode->is_symbol = true;
   }
-//  (*init)->next = (NODE*)malloc(sizeof(NODE));
-//  (*init)->next = *init;
-//
   pNode->next = *init;
   *init = pNode;
 }
@@ -176,7 +173,7 @@ void add_to_list(NODE** init, unsigned long long freq, unsigned char symbol, NOD
 void make_list(NODE** init, unsigned long long* freq_arr) {
   for (unsigned short i = 0; i < SYMBOLS_COUNT; i++) {
     if (freq_arr[i]) {
-      add_to_list(&(*init), freq_arr[i], i, NULL);
+      add_to_list(init, freq_arr[i], i, NULL);
     }
   }
 }
@@ -196,7 +193,7 @@ void make_tree(NODE** init) {
     NODE* new = make_node_from_two((*init), (*init)->next);
     if (((*init)->next)->next) {
       (*init) = ((*init)->next)->next;
-      add_to_list(&(*init), new->freq, '0', new);
+      add_to_list(init, new->freq, '0', new);
     }
     else {
       (*init) = new;
