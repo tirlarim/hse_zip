@@ -6,7 +6,7 @@
 #include "../utils/printColors.h"
 #include "../utils/utils.h"
 
-void checkFileSize(char* filenameInput, char* filenameOutput) {
+void checkFileSize(const char* filenameInput, const char* filenameOutput) {
   long fileSizes[2] = {0};
   FILE* fileInput = fopen(filenameInput, "rb");
   FILE* fileOutput = fopen(filenameOutput, "rb");
@@ -28,7 +28,22 @@ void checkFileSize(char* filenameInput, char* filenameOutput) {
   printf(ANSI_COLOR_RED"get %ld bytes -> %.2f%%"ANSI_COLOR_RESET"\n", fileSizes[1] - fileSizes[0], ((float)fileSizes[1]/(float)fileSizes[0])*100);
 }
 
-void checkFileHash(const char* filenameInput, char* filenameOutput) {
+unsigned long simple_hash(const char* path) {
+  unsigned long hash = 0;
+  unsigned char data;
+  FILE* file = fopen(path, "rb");
+  if (file == NULL) {
+    perror("Unable to open file");
+    return 0;
+  }
+  while (fread(&data, 1, 1, file)) {
+    hash += data;
+  }
+  fclose(file);
+  return hash;
+}
+
+void checkFileHash(const char* filenameInput, const char* filenameOutput) {
   char cmd1[FILENAME_PATH_LEN] = "shasum -a 256 ", cmd2[FILENAME_PATH_LEN] = "shasum -a 256 ", uncompressedFilePath[FILENAME_PATH_LEN] = {0};
   bool filesSame = true;
   memset(uncompressedFilePath, '\0', sizeof uncompressedFilePath);

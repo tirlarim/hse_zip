@@ -137,7 +137,7 @@ void decode(const char* archiveFilename) {
   loopStart = clock();
   while (decodeBits != fileSizeBits) { // start
 #ifdef ENABLE_PROGRESS
-    if (!(decodeBits % onePercentOfFile) && onePercentOfFile) {
+    if (onePercentOfFile && !(decodeBits % onePercentOfFile)) {
       loopEnd = clock();
       printProgress(fileSizeBits, decodeBits, loopEnd, loopStart);
       loopStart = clock();
@@ -196,10 +196,9 @@ char findAnswer(CODES_AS_TREE* root, const unsigned char* arrayLen, int* readInd
   return currentNode->symbol;
 }
 
-//root
 CODES_AS_TREE* Add2Tree(CODES_AS_TREE* root, int arrayLen, int deepIndex, int* arr, char value) {
   if (root == NULL) {
-    root = (CODES_AS_TREE*)malloc(sizeof(CODES_AS_TREE));
+    root = (CODES_AS_TREE*)calloc(1, sizeof(CODES_AS_TREE));
   }
   if (deepIndex == arrayLen) {
     root->symbol = value;
