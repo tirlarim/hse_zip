@@ -11,7 +11,7 @@ void printCurrentTime() {
     int hours = t.tm_hour;
     int minutes = t.tm_min;
     long nanoseconds = ts.tv_nsec;
-    printf("%02d:%02d:%02ld.%ld ", hours, minutes, seconds % 60, nanoseconds);
+    printf("%02d:%02d:%02ld.%ld > ", hours, minutes, seconds % 60, nanoseconds);
   } else {
     perror("Unable get current time ");
   }

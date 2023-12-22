@@ -4,7 +4,7 @@
 #include <stdbool.h>
 
 #define CODE_SIZE 256
-#define PRINTF_DEBUG false
+#define PRINTF_DEBUG
 
 #define PBSTR "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
 #define PBWIDTH 60

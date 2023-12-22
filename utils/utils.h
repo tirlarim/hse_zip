@@ -9,7 +9,8 @@
 unsigned int getNumberOfCores();
 int getFilePath(int filenameLen, char* path, const char* filename);
 int getFilename(int filenameLen, char* filename, const char* path);
-void printLog(const char* message);
+void printLog(const char* format, ...);
 void printProgress(unsigned long bitsAll, unsigned long bitsDecode, clock_t end, clock_t start);
+unsigned long getFileSize(const char* filename);
 
 #endif //HSE_ZIP_UTILS_H

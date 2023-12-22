@@ -4,9 +4,12 @@
 #include <sys/sysctl.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
+
 #else
 #include <unistd.h>
 #endif
+#include <stdarg.h>
 #include "./time.h"
 #include "./printColors.h"
 #include "../tree_list/tree_list.h"
@@ -43,7 +46,6 @@ int getFilename(int filenameLen, char* filename, const char* path) {
   return filenameIndex;
 }
 
-
 #ifdef WIN32
 unsigned int getNumberOfCores() {
   SYSTEM_INFO sysinfo;
@@ -73,24 +75,27 @@ unsigned int getNumberOfCores() {
 }
 #endif
 
-void printLog(const char* message) {
-  if (PRINTF_DEBUG) {
-    if (__APPLE__) printf(ANSI_COLOR_YELLOW);
-    printCurrentTime();
-    printf("%s", message);
-    if (__APPLE__) printf(ANSI_COLOR_RESET);
-  }
+void printLog(const char *format, ...) {
+#ifdef PRINTF_DEBUG
+  va_list args;
+  printf(ANSI_COLOR_YELLOW);
+  printCurrentTime();
+  va_start(args, format);
+  vprintf(format, args);
+  va_end(args);
+  printf(ANSI_COLOR_RESET);
+#endif
 }
 
-//int val = (int) (percentage * 100);
-//int leftPad = (int) (percentage * PBWIDTH);
-//int rightPad = PBWIDTH - leftPad;
-//sec = percentage ? sec : 0;
-
-//double progress = ((double)decodeBits / (double)decodeFileSizeBytes) + 0.01;
-//printProgress(progress, (long long)(((double)(loopEnd - loopStart) / (CLOCKS_PER_SEC)) * (((double)1 - progress) * 100)));
-
-
+unsigned long getFileSize(const char* filename) {
+  FILE* fp = fopen(filename, "rb");
+  if (!fp) exit(2);
+  fseek(fp, 0, SEEK_END);
+  unsigned long length = ftell(fp);
+  fseek(fp, 0, SEEK_SET);
+  fclose(fp);
+  return length;
+}
 
 // rewrite sec
 void printProgress(unsigned long bitsAll, unsigned long bitsDecode, clock_t end, clock_t start) {
