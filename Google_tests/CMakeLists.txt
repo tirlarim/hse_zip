@@ -18,11 +18,11 @@ else()
     message(FATAL_ERROR "Unable to find OpenSSL")
 endif()
 
+#add_compile_definitions(TEST_HEAVY)
+
 # 'Google_Tests_run' is the target name
 # 'test1.cpp test2.cpp' are source files with tests
 add_executable(Google_Tests_run test-text.cpp test-bin.cpp test-heavy.cpp main.cpp utils/test-utils.cpp ../tree_list/decode.c ../tree_list/encode.c
         ../fileWorker/filePrepare.c ../utils/time.c ../utils/utils.c)
 target_include_directories(Google_Tests_run PRIVATE ${OPENSSL_INCLUDE_DIR})
 target_link_libraries(Google_Tests_run PRIVATE gtest gtest_main OpenSSL::SSL OpenSSL::Crypto)
-
-

@@ -12,6 +12,7 @@
 void get_chars_frequency(char filename[], unsigned long long* freq_arr, unsigned long long* length);
 void make_list(NODE** init, unsigned long long* freq_arr);
 void make_tree(NODE** init);
+void freeTree(NODE* root);
 void archive(char input_filename[], char output_filename[], unsigned long long length, NODE** init);
 void create_codes(NODE** init, long long level, char* temp_code);
 
@@ -36,6 +37,8 @@ void encodeArchive(char* fileNameInput, char* fileNameOutput) {
   printLog("archive - DONE.\n");
   endTime = clock();
   printf("archive time: %.2lf sec.\n", (double)(endTime - startTime) / (CLOCKS_PER_SEC));
+  freeTree(pBinTree);
+  free(pBinTree);
 }
 
 void symmetric(NODE* init, FILE* file, TRIPLE* arr) {
@@ -135,21 +138,23 @@ void printTreeCodes(const NODE* init) {
   }
 }
 
+// rewrite pls
 void add_to_list(NODE** init, unsigned long long freq, unsigned char symbol, NODE* branch) {
+  NODE* pnew;
   while (*init) {
     if ((*init)->freq > freq) {
       break;
     }
     init = &((*init)->next);
   }
-  NODE* pnew = (NODE*)malloc(sizeof(NODE));
-  pnew->freq = freq;
-  pnew->symbol = symbol;
-  pnew->left = NULL;
-  pnew->right = NULL;
-  if (branch != NULL)
+  if (branch != NULL) {
     pnew = branch;
-  else {
+  } else {
+    pnew = (NODE*)malloc(sizeof(NODE)); // ok
+    pnew->freq = freq;
+    pnew->symbol = symbol;
+    pnew->left = NULL;
+    pnew->right = NULL;
     pnew->is_symbol = true;
   }
   pnew->next = *init;
@@ -173,6 +178,18 @@ NODE* make_node_from_two(NODE* left, NODE* right) {
   res->next = NULL;
   return res;
 }
+
+void freeTree(NODE* root) {
+  if (root->left != NULL) {
+    freeTree(root->left);
+    free(root->left);
+  }
+  if (root->right != NULL) {
+    freeTree(root->right);
+    free(root->right);
+  }
+}
+
 
 void make_tree(NODE** init) {
   while ((*init)->next) {
@@ -241,22 +258,25 @@ void archive(char input_filename[], char output_filename[], unsigned long long l
   memset(archive, 0, sizeof(&archive));
   bool archiveStatus = true;
   int offset = 0;
-  long long allReadBytes = 0;
-  long long progressBuffer = 0;
+  unsigned long allReadBytes = 0;
+  unsigned long fileLenPercent = length/100, currentPercent = 0, cachePercent = 0;
   clock_t loopStart, loopEnd;
   loopStart = clock();
   while (archiveStatus) {
     BIT_TO_CHAR symbol;
     long long buffMemoryCurrent = 0;
-    buffMemoryCurrent+=offset;
     unsigned long read_bytes = fread(fileContent, sizeof(unsigned char), ARCHIVE_BUFF_SIZE/256, input);
-    allReadBytes+=(long long)read_bytes;
-//    if (progressBuffer != (long long)((double)allReadBytes/(double)length*100)) {
-//      loopEnd = clock();
-//      printProgress((double)allReadBytes/(double)length, (long long)(((double)(loopEnd - loopStart) / (CLOCKS_PER_SEC))*(((double)1-(double)allReadBytes/(double)length)*100)));
-//      progressBuffer = (long long)((double)allReadBytes/(double)length*100);
-//      loopStart = clock();
-//    }
+    buffMemoryCurrent+=offset;
+    allReadBytes+=read_bytes;
+#ifdef ENABLE_PROGRESS
+    cachePercent = fileLenPercent ? allReadBytes / fileLenPercent : 100;
+    if (cachePercent > currentPercent) {
+      currentPercent = cachePercent;
+      loopEnd = clock();
+      printProgress(length, allReadBytes, loopEnd, loopStart);
+      loopStart = clock();
+    }
+#endif
     if (read_bytes == 0) {archiveStatus = false;}
     for (int i = 0; i < read_bytes && buffMemoryCurrent+256 < ARCHIVE_BUFF_SIZE; ++i) {
       memcpy(&buffer[buffMemoryCurrent], codes_array[(int)fileContent[i]], strlen((char*)codes_array[(int)fileContent[i]]));
@@ -284,6 +304,10 @@ void archive(char input_filename[], char output_filename[], unsigned long long l
       break;
     }
   }
+  for (int i = 0; i < 256; ++i) {
+    free(codes_array[i]);
+  }
+  free(codes_array);
   free(freq_array);
   free(fileContent);
   free(buffer);
