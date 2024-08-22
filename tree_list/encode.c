@@ -273,7 +273,7 @@ void archive(char input_filename[], char output_filename[], unsigned long long l
       buffer[j] = buffer[i];
     }
     offset = (int)((buffMemoryCurrent)%8);
-    fwrite(archive, sizeof(unsigned char), archiveLen, final);
+    fwrite(archive, sizeof(*archive)/sizeof(char), archiveLen, final);
     if (length==read_bytes) {
       archiveStatus = false;
       break;
